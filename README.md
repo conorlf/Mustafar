@@ -1,3 +1,8 @@
+Team 10 End of Block Project for Computer Architecture
+
+Our project retrieves and presents system information to the user.
+It uses the provided libsysinfo library through the Java Native Interface (JNI) to access system data.
+
 # cs4421
 This code supports the module CS4421 computer organisation end of block project.
 
