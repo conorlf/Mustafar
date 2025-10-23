@@ -98,27 +98,31 @@ public class template {
                 mem.getUsed() + " is used");
     }
 
-    // public static void showLoad() {
-    // cpuInfo cpu = new cpuInfo();
-    // cpu.read(0);
-    // final int cores = cpu.coresPerSocket() * cpu.socketCount();
+    public static void cpuUtil() {
+        cpuInfo cpu = new cpuInfo();
+        cpu.read(0);
 
-    // int user1 = cpu.getUserTime(0);
-    // int sys1 = cpu.getSystemTime(0);
-    // int idle1 = cpu.getIdleTime(0);
-    // try {
-    // Thread.sleep(1000);
-    // } catch (InterruptedException e) {
-    // }
-    // int user2 = cpu.getUserTime(0);
-    // int sys2 = cpu.getSystemTime(0);
-    // int idle2 = cpu.getIdleTime(0);
-    // int total = (user2 - user1) + (sys2 - sys1) + (idle2 - idle1);
-    // int cpuLoadPercent = (int) ((user2 - user1 + sys2 - sys1) * 100L / total);
-    // cpu.read(1);
-    // System.out.println(cpuLoadPercent);
+        // Hard-coded number of CPU cores for now
+        final int NUM_CORES = cpu.coresPerSocket() * cpu.socketCount();
 
-    // }
+        int totalUsed = 0;
+        int totalTime = 0;
+
+        for (int core = 0; core < NUM_CORES; core++) {
+            int user = cpu.getUserTime(core);
+            int system = cpu.getSystemTime(core);
+            int idle = cpu.getIdleTime(core);
+
+            totalUsed += (user + system);
+            totalTime += (user + system + idle);
+        }
+
+        if (totalTime == 0)
+            return;
+        ;
+        System.out.println((double) totalUsed / totalTime);
+
+    }
 
     public static void main(String[] args) {
         System.loadLibrary("sysinfo");
@@ -133,7 +137,11 @@ public class template {
         showMem();
         // SwingWorkerRealTime swingWorkerRealTime = new SwingWorkerRealTime();
         // swingWorkerRealTime.go();
-        showLoad();
+        cpuUtil();
+        cpuUtil();
+        cpuUtil();
+        cpuUtil();
+        cpuUtil();
 
     }
 }
