@@ -120,7 +120,7 @@ public class template {
         if (totalTime == 0)
             return;
         ;
-        System.out.println((double) totalUsed / totalTime);
+        System.out.printf("Util %f %%", (double) totalUsed / totalTime);
 
     }
 
@@ -137,11 +137,14 @@ public class template {
         showMem();
         // SwingWorkerRealTime swingWorkerRealTime = new SwingWorkerRealTime();
         // swingWorkerRealTime.go();
-        cpuUtil();
-        cpuUtil();
-        cpuUtil();
-        cpuUtil();
-        cpuUtil();
+        while (true) {
+            cpuUtil();
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
 
     }
 }
