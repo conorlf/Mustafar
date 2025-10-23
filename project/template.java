@@ -98,27 +98,27 @@ public class template {
                 mem.getUsed() + " is used");
     }
 
-    public static void showLoad() {
-        cpuInfo cpu = new cpuInfo();
-        cpu.read(0);
-        final int cores = cpu.coresPerSocket() * cpu.socketCount();
+    // public static void showLoad() {
+    // cpuInfo cpu = new cpuInfo();
+    // cpu.read(0);
+    // final int cores = cpu.coresPerSocket() * cpu.socketCount();
 
-        int user1 = cpu.getUserTime(0);
-        int sys1 = cpu.getSystemTime(0);
-        int idle1 = cpu.getIdleTime(0);
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-        }
-        int user2 = cpu.getUserTime(0);
-        int sys2 = cpu.getSystemTime(0);
-        int idle2 = cpu.getIdleTime(0);
-        int total = (user2 - user1) + (sys2 - sys1) + (idle2 - idle1);
-        int cpuLoadPercent = (int) ((user2 - user1 + sys2 - sys1) * 100L / total);
-        cpu.read(1);
-        System.out.println(cpuLoadPercent);
+    // int user1 = cpu.getUserTime(0);
+    // int sys1 = cpu.getSystemTime(0);
+    // int idle1 = cpu.getIdleTime(0);
+    // try {
+    // Thread.sleep(1000);
+    // } catch (InterruptedException e) {
+    // }
+    // int user2 = cpu.getUserTime(0);
+    // int sys2 = cpu.getSystemTime(0);
+    // int idle2 = cpu.getIdleTime(0);
+    // int total = (user2 - user1) + (sys2 - sys1) + (idle2 - idle1);
+    // int cpuLoadPercent = (int) ((user2 - user1 + sys2 - sys1) * 100L / total);
+    // cpu.read(1);
+    // System.out.println(cpuLoadPercent);
 
-    }
+    // }
 
     public static void main(String[] args) {
         // System.loadLibrary("sysinfo");
@@ -130,7 +130,7 @@ public class template {
         // showPCI();
         // showUSB();
         // showDisk();
-        // showMem();
+        showMem();
         // SwingWorkerRealTime swingWorkerRealTime = new SwingWorkerRealTime();
         // swingWorkerRealTime.go();
         showLoad();
