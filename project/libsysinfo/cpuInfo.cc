@@ -1,19 +1,27 @@
-#include <stdio.h>
-#include <string.h>
+/*
+ *  CPU information class implementation.  Reads CPU details by executing lscpu
+ *  and also reads usage stats.
+ *
+ *  Copyright (c) 2024 Mark Burkley (mark.burkley@ul.ie)
+ */
+
+#include <cstdio>
+#include <cstring>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <string>
+#include <array>
 #include <unistd.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <climits>  // Add this
+#include <cstdlib>
+#include <cctype>
 
 #include "cpuInfo.h"
 
 using namespace std;
 
 struct CPUStat {
-    long long user;    // Change to long long to prevent overflow
+    long long user;    // Changed to long long to prevent overflow
     long long system;
     long long idle;
 };
@@ -21,7 +29,7 @@ struct CPUStat {
 class CPUInfo
 {
 public:
-    CPUInfo() {
+    CPUInfo() {       // Added constructor to initialize arrays
         for (int i = 0; i < _maxCores; i++) {
             _havePrevStat[i] = false;
             _prevStat[i] = {0, 0, 0};
@@ -59,18 +67,55 @@ private:
     void _parseStat (char buffer[]);
     CPUStat _prevStat[_maxCores];
     bool _havePrevStat[_maxCores];
-    CPUStat _currStat[_maxCores];  // Store as long long but return as int
+    CPUStat _currStat[_maxCores];
 };
 
 CPUInfo cpu;
 
-// ... _stoi and _parseInfo remain the same ...
+int CPUInfo::_stoi (string& s, int idefault)
+{
+    int ival;
+
+    try {
+        ival = stoi (s);
+    }
+    catch(exception &err) {
+        ival = idefault;
+    }
+
+    return ival;
+}
+
+void CPUInfo::_parseInfo (string& key, string &value)
+{
+    if (key == "Architecture")
+        _architecture = value;
+    else if (key == "Model name")
+        _model = value;
+    else if (key == "Byte Order")
+        _littleEndian = (value == "Little Endian");  // Fixed: = instead of ==
+    else if (key == "Thread(s) per core")
+        _threadsPerCore = _stoi (value, 1);
+    else if (key == "Core(s) per socket" || key == "Core(s) per cluster")
+        _coresPerSocket = _stoi (value, 1);
+    else if (key == "Socket(s)")
+        _socketCount = _stoi (value, 1);
+    else if (key == "L1d cache")
+        _l1dCacheSize = _stoi (value, 0);
+    else if (key == "L1i cache")
+        _l1iCacheSize = _stoi (value, 0);
+    else if (key == "L2 cache")
+        _l2CacheSize = _stoi (value, 0);
+    else if (key == "L3 cache")
+        _l3CacheSize = _stoi (value, 0);
+}
 
 void CPUInfo::_parseStat (char buffer[])
 {
     if (strncmp (buffer, "cpu", 3))
         return;
         
+    // FIX: Handle system-wide "cpu " line properly
     int core = -1;
     if (buffer[3] == ' ') {
         core = 0;  // System-wide CPU uses core 0
@@ -81,12 +126,13 @@ void CPUInfo::_parseStat (char buffer[])
     if (core < 0 || core >= _maxCores)
         return;
 
-    // Find first digit
+    // FIX: Find the first number in the buffer instead of hardcoded position
     char *p = buffer;
-    while (*p && !isdigit(*p)) p++;
-
+    while (*p && !isdigit(*p)) p++;  // Skip to first digit
+    
     CPUStat stat;
-    stat.user = strtoll(p, &p, 10);      // Use strtoll for 64-bit
+    // Use strtoll for more robust parsing (64-bit)
+    stat.user = strtoll(p, &p, 10);
     long long nice = strtoll(p, &p, 10);
     stat.system = strtoll(p, &p, 10);
     stat.idle = strtoll(p, &p, 10);
@@ -100,17 +146,17 @@ void CPUInfo::_parseStat (char buffer[])
         long long idle_delta = stat.idle - _prevStat[core].idle;
         
         // Only use positive deltas (handle counter wrap-around)
-        if (user_delta >= 0 && user_delta < INT_MAX) 
+        if (user_delta >= 0 && user_delta < 10000)  // Reasonable max for 1 second
             _currStat[core].user = user_delta;
         else
             _currStat[core].user = 0;
             
-        if (system_delta >= 0 && system_delta < INT_MAX) 
+        if (system_delta >= 0 && system_delta < 10000)
             _currStat[core].system = system_delta;
         else
             _currStat[core].system = 0;
             
-        if (idle_delta >= 0 && idle_delta < INT_MAX) 
+        if (idle_delta >= 0 && idle_delta < 10000)
             _currStat[core].idle = idle_delta;
         else
             _currStat[core].idle = 0;
@@ -126,7 +172,50 @@ void CPUInfo::_parseStat (char buffer[])
     _havePrevStat[core] = true;
 }
 
-// ... rest of your code (read function and JNI) remains the same ...
+void CPUInfo::read(int seconds)
+{
+    if (seconds)
+        sleep (seconds);
+
+    // Only parse lscpu on first call to avoid unnecessary overhead
+    static bool firstRead = true;
+    if (firstRead) {
+        std::array<char, 4096> buffer;
+        std::unique_ptr<FILE, decltype(&pclose)> pipe(popen("lscpu -B", "r"), pclose);
+
+        if (pipe) {
+            while (fgets(buffer.data(), static_cast<int>(buffer.size()), pipe.get()) != nullptr) {
+                string line = buffer.data();
+                int delim = line.find(':');
+                if (delim == string::npos)
+                    continue;  // Just skip malformed lines
+                string key = line.substr (0, delim);
+                delim++;
+                while (line[delim] == ' ')
+                    delim++;
+                string value = line.substr (delim, string::npos);
+                // Remove trailing newline
+                if (!value.empty() && value[value.length()-1] == '\n')
+                    value.erase(value.length()-1);
+                _parseInfo (key, value);
+            }
+        }
+        firstRead = false;
+    }
+
+    std::array<char, 4096> buffer;
+    std::unique_ptr<FILE, decltype(&fclose)> stat(fopen("/proc/stat", "r"), fclose);
+
+    if (!stat) {
+        throw std::runtime_error("Failed to open /proc/stat !");
+    }
+
+    while (fgets(buffer.data(), static_cast<int>(buffer.size()), stat.get()) != nullptr)
+        _parseStat (buffer.data());
+}
+
+// Wrap JNI functions with extern "C" to fix linking
+extern "C" {
 
 JNIEXPORT void JNICALL Java_cpuInfo_read__ (JNIEnv *env, jobject obj) {
     cpu.read();
@@ -178,3 +267,4 @@ JNIEXPORT jint JNICALL Java_cpuInfo_getSystemTime (JNIEnv *env, jobject obj, jin
    return cpu.getStatSystem (core);
 }
 
+} // extern "C"
