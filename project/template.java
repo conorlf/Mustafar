@@ -72,8 +72,6 @@ public class template {
                 ", l2=" + cpu.l2CacheSize() +
                 ", l3=" + cpu.l3CacheSize());
 
-        System.out
-                .println(cpu.getIdleTime(1) + cpu.getUserTime(1) + cpu.getSystemTime(1) + " total jiffies for core 1");
         // Sleep for 1 second and display the idle time percentage for
         // core 1. This assumes 10Hz so in one second we have 100
         cpu.read(1);
@@ -100,25 +98,35 @@ public class template {
                 mem.getUsed() + " is used");
     }
 
-    public static void showLoad() {
+    public static double getCoreUtilization(int core) {
         cpuInfo cpu = new cpuInfo();
+
+        // First read to establish baseline
         cpu.read(0);
-        final int cores = cpu.coresPerSocket() * cpu.socketCount();
 
-        int user1 = cpu.getUserTime(0);
-        int sys1 = cpu.getSystemTime(0);
-        int idle1 = cpu.getIdleTime(0);
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
+        // Second read to get deltas
+        cpu.read(1);
+
+        int cpuCount = cpu.socketCount() * cpu.coresPerSocket();
+
+        // Get the time deltas (these are the values you mentioned)
+        int userTime = cpu.getUserTime(1);
+        int systemTime = cpu.getSystemTime(1);
+        int idleTime = cpu.getIdleTime(1);
+
+        // Calculate total CPU time
+        int totalTime = userTime + systemTime + idleTime;
+
+        // Avoid division by zero
+        if (totalTime <= 0) {
+            return 0.0;
         }
-        int user2 = cpu.getUserTime(0);
-        int sys2 = cpu.getSystemTime(0);
-        int idle2 = cpu.getIdleTime(0);
-        int total = (user2 - user1) + (sys2 - sys1) + (idle2 - idle1);
-        int cpuLoadPercent = (int) ((user2 - user1 + sys2 - sys1) * 100L / total);
-        System.out.println(cpuLoadPercent);
 
+        // Calculate utilization: (non-idle time) / total time
+        int nonIdleTime = userTime + systemTime;
+        double utilization = ((double) nonIdleTime / totalTime) * 100.0;
+
+        return utilization;
     }
 
     public static void main(String[] args) {
@@ -126,7 +134,8 @@ public class template {
         sysInfo info = new sysInfo();
         cpuInfo cpu = new cpuInfo();
         cpu.read(0);
-        showCPU();
+        System.out.println("Core 1 Utilization: " + getCoreUtilization(1) + "%");
+        // showCPU();
         // showPCI();
         // showUSB();
         // showDisk();
