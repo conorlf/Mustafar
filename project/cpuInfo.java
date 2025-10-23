@@ -42,4 +42,6 @@ public class cpuInfo
     // Return the time in "jiffies" or 1/100ths of a second 
     // that the specified core has been in system mode
     public native int getSystemTime (int core);
+
+    //public native int getCpuTemperature ();
 }

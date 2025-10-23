@@ -106,16 +106,19 @@ public class template
 
     public static void main(String[] args)
     {
-        System.loadLibrary("sysinfo");
-        sysInfo info = new sysInfo();
-        cpuInfo cpu = new cpuInfo();
-        cpu.read(0);
+        // System.loadLibrary("sysinfo");
+        // sysInfo info = new sysInfo();
+        // cpuInfo cpu = new cpuInfo();
+        // cpu.read(0);
 
-        showCPU();
-        showPCI();
-        showUSB();
-        showDisk();
-        showMem();
+        // showCPU();
+        // showPCI();
+        // showUSB();
+        // showDisk();
+        // showMem();
+        SwingWorkerRealTime swingWorkerRealTime = new SwingWorkerRealTime();
+        swingWorkerRealTime.go();
+        
     }
 }
 
