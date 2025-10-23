@@ -59,6 +59,8 @@ public class template {
 
     public static void showCPU() {
         cpuInfo cpu = new cpuInfo();
+
+        // First read establishes baseline
         cpu.read(0);
 
         // Show CPU model, CPU sockets and cores per socket
@@ -72,10 +74,22 @@ public class template {
                 ", l2=" + cpu.l2CacheSize() +
                 ", l3=" + cpu.l3CacheSize());
 
-        // Sleep for 1 second and display the idle time percentage for
-        // core 1. This assumes 10Hz so in one second we have 100
+        // Second read after 1 second gives you meaningful deltas
         cpu.read(1);
-        System.out.println("core 1 idle=" + cpu.getIdleTime(1) + "%");
+
+        // Now calculate percentage properly
+        int user = cpu.getUserTime(1);
+        int system = cpu.getSystemTime(1);
+        int idle = cpu.getIdleTime(1);
+        int total = user + system + idle;
+
+        if (total > 0) {
+            double idlePercent = (idle * 100.0) / total;
+            System.out.println("core 1 idle=" + idlePercent + "% (" +
+                    idle + " jiffies out of " + total + ")");
+        } else {
+            System.out.println("core 1 idle=0% (no activity measured)");
+        }
     }
 
     public static void showDisk() {
