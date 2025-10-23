@@ -109,9 +109,14 @@ public class template {
         int totalTime = 0;
 
         for (int core = 0; core < NUM_CORES; core++) {
+
             int user = cpu.getUserTime(core);
             int system = cpu.getSystemTime(core);
             int idle = cpu.getIdleTime(core);
+
+            if (user < 0 || system < 0 || idle < 0) {
+                System.err.println("Warning: negative jiffy value on core " + core);
+            }
 
             totalUsed += (user + system);
             totalTime += (user + system + idle);
@@ -119,7 +124,6 @@ public class template {
 
         if (totalTime == 0)
             return;
-        ;
         System.out.printf("Util %f %%", (double) totalUsed / totalTime);
 
     }
@@ -137,14 +141,8 @@ public class template {
         showMem();
         // SwingWorkerRealTime swingWorkerRealTime = new SwingWorkerRealTime();
         // swingWorkerRealTime.go();
-        while (true) {
-            cpuUtil();
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+
+        cpuUtil();
 
     }
 }
