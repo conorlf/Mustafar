@@ -103,14 +103,13 @@ public class template {
 
         // First read to establish baseline
         cpu.read(0);
-
         // Second read to get deltas
         cpu.read(1);
 
         int cpuCount = cpu.socketCount() * cpu.coresPerSocket();
 
         // Get the time deltas (these are the values you mentioned)
-        int userTime = cpu.getUserTime(1);
+        int userTime = cpu.getUserTime(core);
         int systemTime = cpu.getSystemTime(1);
         int idleTime = cpu.getIdleTime(1);
 
@@ -126,7 +125,7 @@ public class template {
         int nonIdleTime = userTime + systemTime;
         double utilization = ((double) nonIdleTime / totalTime) * 100.0;
 
-        return utilization;
+        return 100 - idleTime;
     }
 
     public static void main(String[] args) {
@@ -134,7 +133,8 @@ public class template {
         sysInfo info = new sysInfo();
         cpuInfo cpu = new cpuInfo();
         cpu.read(0);
-        System.out.println("Core 1 Utilization: " + getCoreUtilization(1) + "%");
+        while (true)
+            System.out.println("Core 1 Utilization: " + getCoreUtilization(1) + "%");
         // showCPU();
         // showPCI();
         // showUSB();
