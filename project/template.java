@@ -115,6 +115,7 @@ public class template {
         int idle2 = cpu.getIdleTime(0);
         int total = (user2 - user1) + (sys2 - sys1) + (idle2 - idle1);
         int cpuLoadPercent = (int) ((user2 - user1 + sys2 - sys1) * 100L / total);
+        cpu.read(1);
         System.out.println(cpuLoadPercent);
 
     }
