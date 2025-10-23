@@ -72,6 +72,8 @@ public class template {
                 ", l2=" + cpu.l2CacheSize() +
                 ", l3=" + cpu.l3CacheSize());
 
+        System.out
+                .println(cpu.getIdleTime(1) + cpu.getUserTime(1) + cpu.getSystemTime(1) + " total jiffies for core 1");
         // Sleep for 1 second and display the idle time percentage for
         // core 1. This assumes 10Hz so in one second we have 100
         cpu.read(1);
@@ -98,69 +100,25 @@ public class template {
                 mem.getUsed() + " is used");
     }
 
-    public static void cpuUtil() {
+    public static void showLoad() {
         cpuInfo cpu = new cpuInfo();
         cpu.read(0);
+        final int cores = cpu.coresPerSocket() * cpu.socketCount();
 
-        final int NUM_CORES = cpu.coresPerSocket() * cpu.socketCount();
-
-        // take first sample
-        int[] prevUser = new int[NUM_CORES];
-        int[] prevSystem = new int[NUM_CORES];
-        int[] prevIdle = new int[NUM_CORES];
-
-        for (int core = 0; core < NUM_CORES; core++) {
-            prevUser[core] = cpu.getUserTime(core);
-            prevSystem[core] = cpu.getSystemTime(core);
-            prevIdle[core] = cpu.getIdleTime(core);
-        }
-
-        // wait for the next sample
+        int user1 = cpu.getUserTime(0);
+        int sys1 = cpu.getSystemTime(0);
+        int idle1 = cpu.getIdleTime(0);
         try {
             Thread.sleep(1000);
         } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return;
         }
+        int user2 = cpu.getUserTime(0);
+        int sys2 = cpu.getSystemTime(0);
+        int idle2 = cpu.getIdleTime(0);
+        int total = (user2 - user1) + (sys2 - sys1) + (idle2 - idle1);
+        int cpuLoadPercent = (int) ((user2 - user1 + sys2 - sys1) * 100L / total);
+        System.out.println(cpuLoadPercent);
 
-        cpu.read(0); // refresh data
-
-        long totalUsed = 0;
-        long totalTime = 0;
-
-        for (int core = 0; core < NUM_CORES; core++) {
-            int newUser = cpu.getUserTime(core);
-            int newSystem = cpu.getSystemTime(core);
-            int newIdle = cpu.getIdleTime(core);
-
-            int deltaUser = newUser - prevUser[core];
-            int deltaSystem = newSystem - prevSystem[core];
-            int deltaIdle = newIdle - prevIdle[core];
-
-            if (deltaUser < 0 || deltaSystem < 0 || deltaIdle < 0) {
-                System.err.println("Warning: negative jiffy value on core " + core);
-                continue;
-            }
-
-            int used = deltaUser + deltaSystem;
-            int total = used + deltaIdle;
-
-            totalUsed += used;
-            totalTime += total;
-        }
-
-        if (totalTime == 0)
-            return;
-
-        double util = (double) totalUsed / totalTime * 100.0;
-
-        // prevent negatives or small rounding errors
-        if (util < 0)
-            util = 0;
-        if (util > 100)
-            util = 100;
-
-        System.out.printf("Util %.3f %%\n", util);
     }
 
     public static void main(String[] args) {
@@ -168,16 +126,13 @@ public class template {
         sysInfo info = new sysInfo();
         cpuInfo cpu = new cpuInfo();
         cpu.read(0);
-
-        // showCPU();
+        showCPU();
         // showPCI();
         // showUSB();
         // showDisk();
-        showMem();
+        // showMem();
         // SwingWorkerRealTime swingWorkerRealTime = new SwingWorkerRealTime();
         // swingWorkerRealTime.go();
-
-        cpuUtil();
 
     }
 }
