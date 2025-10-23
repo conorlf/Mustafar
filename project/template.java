@@ -104,7 +104,7 @@ public class template {
 
         final int NUM_CORES = cpu.coresPerSocket() * cpu.socketCount();
 
-        // Take the first sample
+        // take first sample
         int[] prevUser = new int[NUM_CORES];
         int[] prevSystem = new int[NUM_CORES];
         int[] prevIdle = new int[NUM_CORES];
@@ -115,7 +115,7 @@ public class template {
             prevIdle[core] = cpu.getIdleTime(core);
         }
 
-        // Wait one second for the next reading
+        // wait for the next sample
         try {
             Thread.sleep(1000);
         } catch (InterruptedException e) {
@@ -123,48 +123,44 @@ public class template {
             return;
         }
 
-        cpu.read(0); // refresh stats
+        cpu.read(0); // refresh data
 
-        long totalUsed = 0; // still use long for accumulation
+        long totalUsed = 0;
         long totalTime = 0;
 
-        System.out.println("Per-core utilization (percent):");
-
         for (int core = 0; core < NUM_CORES; core++) {
-            int user = cpu.getUserTime(core);
-            int system = cpu.getSystemTime(core);
-            int idle = cpu.getIdleTime(core);
+            int newUser = cpu.getUserTime(core);
+            int newSystem = cpu.getSystemTime(core);
+            int newIdle = cpu.getIdleTime(core);
 
-            int deltaUser = user - prevUser[core];
-            int deltaSystem = system - prevSystem[core];
-            int deltaIdle = idle - prevIdle[core];
+            int deltaUser = newUser - prevUser[core];
+            int deltaSystem = newSystem - prevSystem[core];
+            int deltaIdle = newIdle - prevIdle[core];
 
-            // skip this core if deltas look wrong (counter wrap or reset)
             if (deltaUser < 0 || deltaSystem < 0 || deltaIdle < 0) {
-                System.err.printf("Skipping core %d due to negative delta (wraparound?)%n", core);
+                System.err.println("Warning: negative jiffy value on core " + core);
                 continue;
             }
 
             int used = deltaUser + deltaSystem;
             int total = used + deltaIdle;
 
-            if (total == 0)
-                continue;
-
-            double coreUtil = (double) used / total * 100.0;
-            System.out.printf("  core %d: %.2f%%%n", core, coreUtil);
-
             totalUsed += used;
             totalTime += total;
         }
 
-        if (totalTime == 0) {
-            System.out.println("No valid CPU delta data available.");
+        if (totalTime == 0)
             return;
-        }
 
-        double totalUtil = (double) totalUsed / totalTime * 100.0;
-        System.out.printf("Total CPU Utilization: %.2f%%%n", totalUtil);
+        double util = (double) totalUsed / totalTime * 100.0;
+
+        // prevent negatives or small rounding errors
+        if (util < 0)
+            util = 0;
+        if (util > 100)
+            util = 100;
+
+        System.out.printf("Util %.3f %%\n", util);
     }
 
     public static void main(String[] args) {
