@@ -50,3 +50,9 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# libyssinfo.so generated .h header files
+project/*.h
+
+# java compilation files
+*.class
