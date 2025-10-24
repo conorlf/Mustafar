@@ -3,7 +3,7 @@
  *
  *  Copyright (c) 2024 Mark Burkley (mark.burkley@ul.ie)
  */
-
+import java.util.Scanner;
 public class template 
 {
     public static void showPCI()
@@ -31,7 +31,7 @@ public class template
                         if (pci.functionPresent (i, j, k) > 0) {
                             System.out.println("Bus "+i+" device "+j+" function "+k+
                                 " has vendor "+String.format("0x%04X", pci.vendorID(i,j,k))+
-                                " and product "+String.format("0x%04X", pci.productID(i,j,k)));
+                                " and product "+String.format("0x%04X", pci.productID(i,j,k))+" and vendor name"+Dictionary.getPCIVendorName(pci.vendorID(i,j,k))+" and device name "+Dictionary.getPCIDeviceName(pci.vendorID(i,j,k),pci.productID(i,j,k)));
                         }
                     }
                 }
@@ -55,7 +55,7 @@ public class template
             for (int j = 1; j <= usb.deviceCount(i); j++) {
                 System.out.println("Bus "+i+" device "+j+
                     " has vendor "+String.format("0x%04X", usb.vendorID(i,j))+
-                    " and product "+String.format("0x%04X", usb.productID(i,j)));
+                    " and product "+String.format("0x%04X", usb.productID(i,j))+" and vendor name "+Dictionary.getUSBVendorName(usb.vendorID(i,j))+" and device name "+Dictionary.getUSBDeviceName(usb.vendorID(i,j),usb.productID(i,j)));
             }
         }
     }
@@ -107,15 +107,71 @@ public class template
     public static void main(String[] args)
     {
         System.loadLibrary("sysinfo");
+        Scanner input=new Scanner(System.in);
+         String usbFilePath = "//home//project//JavaInstall//Mustafar//project//usb.ids";  // Linux
+        
+
+        //Load the dictionary
+        System.out.println("Loading USB dictionary...");
+        long mili1=System.currentTimeMillis();
+        Dictionary.loadUSBDictionary(usbFilePath);
+        long mili2=System.currentTimeMillis();
+        mili2=mili2-mili1;
+        System.out.println("Dictionary loaded. "+mili2);
+         String pciFilePath = "//home//project//JavaInstall//Mustafar//project//pci.ids";  // Linux
+        // Load the dictionary
+        System.out.println("Loading PCI dictionary...");
+        mili1=System.currentTimeMillis();
+        Dictionary.loadPCIDictionary(pciFilePath);
+        mili2=System.currentTimeMillis();
+        mili2=mili2-mili1;
+        System.out.println("Dictionary loaded. "+mili2);
         sysInfo info = new sysInfo();
         cpuInfo cpu = new cpuInfo();
         cpu.read(0);
-
-        showCPU();
-        showPCI();
-        showUSB();
-        showDisk();
-        showMem();
+        try(UsbMonitor monitor = new UsbMonitor(1000)){
+        monitor.start();
+        boolean isRunning=true;
+        while(isRunning){
+        System.out.println("==========Welcome to the System Information Tool==========");
+        System.out.println("Press 1) View CPU Information");
+        System.out.println("Press 2) View PCI Information");
+        System.out.println("Press 3) View connected USB Devices");
+        System.out.println("Press 4) View current Memory Usage");
+        System.out.println("Press 5) View Disks");
+        System.out.println("Press x) To Exit");
+        char choice = Character.toLowerCase(input.next().charAt(0));
+        switch(choice){
+        case '1':{
+            showCPU();
+            break;
+        }
+        case '2':{
+            showPCI();
+            break;
+        }
+        case '3':{
+            showUSB();
+            break;
+        }
+        case '4':{
+            showDisk();
+            break;
+        }
+        case '5':{
+            showMem();
+            break;
+        }
+        case 'x':{
+            System.out.println("System shutting down...");
+            System.exit(0);
+        }
+        default:{
+            System.out.println("Invalid input. Please try again");
+        }
+        }
     }
+    }
+}
 }
 
