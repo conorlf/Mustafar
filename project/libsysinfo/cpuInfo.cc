@@ -38,6 +38,7 @@ public:
     int getStatUser(int core) { return _currStat[core].user; }
     int getStatSystem (int core) { return _currStat[core].system; }
     int getStatIdle (int core) { return _currStat[core].idle; }
+    double getCPUSpeedMHz() { return _cpuSpeedMHz; }
 private:
     static const int _maxCores = 64;
     string _architecture;
@@ -52,6 +53,7 @@ private:
     int _l1iCacheSize;
     int _l2CacheSize;
     int _l3CacheSize;
+    double _cpuSpeedMHz;
     int _stoi (string& s, int idefault);
     void _parseInfo (string&, string &);
     void _parseStat (char buffer[]);
@@ -75,6 +77,22 @@ int CPUInfo::_stoi (string& s, int idefault)
     }
 
     return ival;
+}
+
+double CPUInfo::_clockSpeed()
+{
+    std::ifstream cpuinfo("/proc/cpuinfo");
+    std::string line;
+    while (std::getline(cpuinfo, line)) {
+        if (line.substr(0, 7) == "cpu MHz\t:") {
+            size_t pos = line.find(':');
+            if (pos != std::string::npos) {
+                return std::stod(line.substr(pos + 1));
+            }
+        }
+    }                           
+    // Placeholder for actual clock speed retrieval logic
+    return 0.0; // Example: 2400 MHz
 }
 
 void CPUInfo::_parseInfo (string& key, string &value)
