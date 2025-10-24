@@ -60,6 +60,7 @@ private:
     void _parseStat (string&);
     CPUStat _prevStat[_maxCores];
     bool _havePrevStat[_maxCores];
+    double _clockSpeed();
     CPUStat _currStat[_maxCores];
 };
 
@@ -228,5 +229,9 @@ JNIEXPORT jint JNICALL Java_cpuInfo_getIdleTime (JNIEnv *env, jobject obj, jint 
 
 JNIEXPORT jint JNICALL Java_cpuInfo_getSystemTime (JNIEnv *env, jobject obj, jint core) {
    return cpu.getStatSystem (core);
+}
+
+JNIEXPORT jdouble JNICALL Java_cpuInfo_getCPUSpeedMHz (JNIEnv *env, jobject obj) {
+   return cpu.getCPUSpeedMHz();
 }
 
