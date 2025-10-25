@@ -4,40 +4,14 @@
  *  Copyright (c) 2024 Mark Burkley (mark.burkley@ul.ie)
  */
 
+import systeminfo.*;
+import java.util.List;
+import java.util.ArrayList;
+
 public class template 
 {
     public static void showPCI()
-    {
-        pciInfo pci = new pciInfo();
-        pci.read();
-
-        System.out.println("\nThis machine has "+
-            pci.busCount()+" PCI buses ");
-
-        // Iterate through each bus
-        for (int i = 0; i < pci.busCount(); i++) {
-            System.out.println("Bus "+i+" has "+
-                pci.deviceCount(i)+" devices");
-
-            // Iterate for up to 32 devices.  Not every device slot may be populated
-            // so ensure at least one function before printing device information
-            for (int j = 0; j < 32; j++) {
-                if (pci.functionCount (i, j) > 0) {
-                    System.out.println("Bus "+i+" device "+j+" has "+
-                        pci.functionCount(i, j)+" functions");
-
-                    // Iterate through up to 8 functions per device.
-                    for (int k = 0; k < 8; k++) {
-                        if (pci.functionPresent (i, j, k) > 0) {
-                            System.out.println("Bus "+i+" device "+j+" function "+k+
-                                " has vendor "+String.format("0x%04X", pci.vendorID(i,j,k))+
-                                " and product "+String.format("0x%04X", pci.productID(i,j,k)));
-                        }
-                    }
-                }
-            }
-        }
-    }
+    {}
 
     public static void showUSB()
     {
@@ -104,7 +78,96 @@ public class template
             mem.getUsed()+" is used");
     }
 
+////////////////////////////////////////////////////////////////////////
+
+    public static void loadCpuInfo(Computer c) {
+        cpuInfo cpu = new cpuInfo();
+        cpu.read(0);
+        // read all the static info - i.e. nujmber cores, model etc.populate it to our data structure
+        Cpu myCpu = new Cpu(cpu.getModel(), cpu.socketCount(), cpu.coresPerSocket(), cpu.l1dCacheSize(), cpu.l1iCacheSize(), cpu.l2CacheSize(), cpu.l3CacheSize());
+        
+        // assuming all sockets are identical
+        for (int j = 0; j < myCpu.coresPerSocket; j++){
+            CpuCore core = new CpuCore(j);
+            myCpu.cores.add(core);
+        }
+        c.cpu = myCpu;
+    }
+
+    public static void loadPciInfo(Computer c) {
+        pciInfo pci = new pciInfo();
+        pci.read();
+        // Iterate through each bus
+        for (int i = 0; i < pci.busCount(); i++) {
+            PciBus myPciBus = new PciBus(i);
+        
+            // Iterate for up to 32 devices.  Not every device slot may be populated
+            // so ensure at least one function before storing device information
+            for (int j = 0; j < 32; j++) {
+                if (pci.functionCount (i, j) > 0) {
+                    PciDevice myPciDevice = new PciDevice(pci.functionCount(i, j));
+
+                    // Iterate through up to 8 functions per device.
+                    for (int k = 0; k < 8; k++) {
+                        if (pci.functionPresent (i, j, k) > 0) {
+                            PciFunction myPciFunction = new PciFunction (k, String.format("0x%04X", pci.vendorID(i,j,k)), String.format("0x%04X", pci.productID(i,j,k)));
+                            myPciDevice.pciFunctions.add(myPciFunction);
+                        }
+                    }
+                    myPciBus.pciDevices.add(myPciDevice);
+                }
+            }
+            c.pciBuses.add(myPciBus);
+        }
+    }
+
+    public static void loadUsbInfo(Computer c) {
+        usbInfo usb = new usbInfo();
+        usb.read();
+        // Iterate through all of the USB buses
+        for (int i = 1; i <= usb.busCount(); i++) {
+            UsbBus myUsb = new UsbBus(i);
+            // Iterate through all of the USB devices on the bus
+            for (int j = 1; j <= usb.deviceCount(i); j++) {
+                UsbDevice myUsbDevice = new UsbDevice(j, String.format("0x%04X", usb.vendorID(i,j)), String.format("0x%04X", usb.productID(i,j)));
+                myUsb.usbDevices.add(myUsbDevice);
+            }
+            c.usbBuses.add(myUsb);
+        }
+    }
+
+    public static void loadDiskInfo(Computer c) {
+        diskInfo disk = new diskInfo();
+        disk.read();
+        for (int i = 0; i < disk.diskCount(); i++) {
+            Disk myDisk = new Disk(disk.getName(i), disk.getTotal(i), disk.getUsed(i));
+            c.disks.add(myDisk);
+        }
+    }
+
+    public static void loadMemoryInfo(Computer c) {
+        memInfo mem = new memInfo();
+        mem.read();
+        Memory myMemory = new Memory(mem.getTotal(), mem.getUsed());
+        c.memory = myMemory;
+    }
+
     public static void main(String[] args)
+    {
+        Computer c = new Computer();
+        System.loadLibrary("sysinfo");
+        sysInfo info = new sysInfo();
+
+        loadCpuInfo(c);
+        loadPciInfo(c);
+        loadUsbInfo(c);
+        loadDiskInfo(c);
+        loadMemoryInfo(c);
+
+        c.dumpToConsole();
+    }
+
+    public static void old_main()
     {
         System.loadLibrary("sysinfo");
         sysInfo info = new sysInfo();
