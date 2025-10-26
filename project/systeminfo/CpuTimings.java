@@ -1,14 +1,14 @@
 package systeminfo;
 
 public class CpuTimings {
-    public long timestamp;
+    public int secondsSinceStart;
     public double idlePercent;
     public double userPercent;
     public double systemPercent;
     public double usagePercent;
 
-    public CpuTimings (long timestamp, double idlePercent, double userPercent, double systemPercent) {
-        this.timestamp = timestamp;
+    public CpuTimings (int secondsSinceStart, double idlePercent, double userPercent, double systemPercent) {
+        this.secondsSinceStart = secondsSinceStart;
         this.idlePercent = idlePercent;
         this.userPercent = userPercent;
         this.systemPercent = systemPercent;

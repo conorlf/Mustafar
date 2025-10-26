@@ -78,7 +78,7 @@ public class template
             mem.getUsed()+" is used");
     }
 
-////////////////////////////////////////////////////////////////////////
+
 
     public static void loadCpuInfo(Computer c) {
         cpuInfo cpu = new cpuInfo();
@@ -105,7 +105,7 @@ public class template
             // so ensure at least one function before storing device information
             for (int j = 0; j < 32; j++) {
                 if (pci.functionCount (i, j) > 0) {
-                    PciDevice myPciDevice = new PciDevice(pci.functionCount(i, j));
+                    PciDevice myPciDevice = new PciDevice(j);
 
                     // Iterate through up to 8 functions per device.
                     for (int k = 0; k < 8; k++) {
@@ -164,9 +164,34 @@ public class template
         loadDiskInfo(c);
         loadMemoryInfo(c);
 
-        c.dumpToConsole();
-    }
+        //c.dumpToConsole();
+        
+        cpuInfo cpu = new cpuInfo();
+        cpu.read(0);
+        for (int i = 1; i <= 15; i++) {
+            sampleCpuUsage(c, cpu, i);
+        }
 
+        Gui.showChart(c);
+    }
+ 
+
+    public static void sampleCpuUsage (Computer c, cpuInfo cpu, int secondsSinceStart) {
+        cpu.read(1);
+        for (int i = 0; i < c.cpu.cores.size(); i++) {
+            int idleTime = cpu.getIdleTime(i);
+            int systemTime = cpu.getSystemTime(i);
+            int userTime = cpu.getUserTime(i);
+            int totalTime = idleTime + systemTime + userTime;
+
+            double idlePercent = ((double) idleTime / totalTime) * 100;
+            double systemPercent = ((double) systemTime / totalTime) * 100;
+            double userPercent = ((double) userTime / totalTime) * 100;
+
+            CpuTimings myCpuTimings = new CpuTimings(secondsSinceStart, idlePercent, userPercent, systemPercent);
+            c.cpu.cores.get(i).cpuTimings.add(myCpuTimings);
+        }
+    }
     public static void old_main()
     {
         System.loadLibrary("sysinfo");
