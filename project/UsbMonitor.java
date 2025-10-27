@@ -56,19 +56,14 @@ public final class UsbMonitor implements AutoCloseable {
             }
         }
 
-        // Detect added devices
         List<String> added = new ArrayList<>(newIds);
         added.removeAll(oldIds);
-
-        // Detect removed devices
         List<String> removed = new ArrayList<>(oldIds);
         removed.removeAll(newIds);
 
-        // Update oldIds with a copy
-        oldIds.clear();
-        oldIds.addAll(newIds);
+        oldIds = newIds;
+        oldList = newList;
 
-        // Notify listener
         for (String id : added) {
             String msg = "[USB] Added: " + id;
             System.out.println(msg);
@@ -79,8 +74,6 @@ public final class UsbMonitor implements AutoCloseable {
             System.out.println(msg);
             notifyListener(msg);
         }
-
-        oldList = newList;
 
         return newList;
     }
