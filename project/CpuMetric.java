@@ -6,6 +6,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 
 import org.knowm.xchart.QuickChart;
 import org.knowm.xchart.XChartPanel;
@@ -20,6 +21,7 @@ public class CpuMetric {
     private JButton stressButton;
     private Timer stressTimer;
     private boolean isStressing = false;
+    private final int REFRESH_RATE_MS = 250; // 4 times per second (1000ms / 4 = 250ms)
 
     public void start() {
         // Initialize CPU monitoring
@@ -27,7 +29,7 @@ public class CpuMetric {
 
         // Create Chart
         chart = QuickChart.getChart(
-                "CPU Usage (Real-Time)",
+                "CPU Usage (Real-Time - 4Hz)",
                 "Time",
                 "CPU Usage %",
                 "cpu_usage",
@@ -39,7 +41,7 @@ public class CpuMetric {
         chart.getStyler().setYAxisMax(100.0);
 
         // Create the frame
-        frame = new JFrame("CPU Monitor");
+        frame = new JFrame("CPU Monitor - 4Hz Refresh");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new BorderLayout());
 
@@ -51,7 +53,12 @@ public class CpuMetric {
         JPanel controlPanel = new JPanel();
         stressButton = new JButton("Stress CPU for 15 seconds");
         stressButton.addActionListener(new StressButtonListener());
+
+        JLabel refreshLabel = new JLabel("Refresh: 4Hz");
+        refreshLabel.setForeground(Color.BLUE);
+
         controlPanel.add(stressButton);
+        controlPanel.add(refreshLabel);
 
         frame.add(controlPanel, BorderLayout.SOUTH);
 
@@ -83,90 +90,49 @@ public class CpuMetric {
         stressButton.setBackground(Color.RED);
         stressButton.setForeground(Color.WHITE);
 
-        // Start stress command in a separate thread
         new Thread(() -> {
             try {
-                System.out.println("Starting aggressive CPU stress test...");
+                int cores = Runtime.getRuntime().availableProcessors();
+                System.out.println("Starting " + cores + " CPU-intensive threads...");
 
-                // Method 1: Use more CPU workers (number of CPU cores)
-                int cpuCores = Runtime.getRuntime().availableProcessors();
-                ProcessBuilder pb = new ProcessBuilder("stress", "--cpu", String.valueOf(cpuCores), "--timeout", "15");
+                // Create multiple threads that do intensive math
+                List<Thread> threads = new ArrayList<>();
+                for (int i = 0; i < cores; i++) {
+                    Thread t = new Thread(() -> {
+                        long startTime = System.currentTimeMillis();
+                        while (System.currentTimeMillis() - startTime < 15000
+                                && !Thread.currentThread().isInterrupted()) {
+                            // Intensive floating point calculations
+                            double result = 0;
+                            for (int j = 0; j < 1000000; j++) {
+                                result += Math.sqrt(j) * Math.sin(j) * Math.cos(j);
+                            }
+                        }
+                    });
+                    t.start();
+                    threads.add(t);
+                }
 
-                // Method 2: Alternative - use CPU with 100% load per worker
-                // ProcessBuilder pb = new ProcessBuilder("stress", "--cpu",
-                // String.valueOf(cpuCores), "--cpu-load", "100", "--timeout", "15");
+                // Wait for 15 seconds
+                Thread.sleep(15000);
 
-                System.out.println("Using " + cpuCores + " CPU cores for stress test");
+                // Stop all threads
+                for (Thread t : threads) {
+                    t.interrupt();
+                }
 
-                Process process = pb.start();
-
-                // Wait for the stress command to complete
-                int exitCode = process.waitFor();
-                System.out.println("Stress test completed with exit code: " + exitCode);
-
-                // Reset button on completion
-                SwingUtilities.invokeLater(() -> {
-                    stopStressTest();
-                });
+                System.out.println("Java-based stress test completed");
+                SwingUtilities.invokeLater(() -> stopStressTest());
 
             } catch (Exception ex) {
-                System.err.println("Error running stress command: " + ex.getMessage());
-
-                // Fallback to alternative method
-                tryFallbackStressTest();
+                System.err.println("Error in Java stress test: " + ex.getMessage());
+                SwingUtilities.invokeLater(() -> stopStressTest());
             }
         }).start();
 
-        // Set a timer to automatically reset the button after 16 seconds
-        stressTimer = new Timer(16000, e -> {
-            stopStressTest();
-        });
+        stressTimer = new Timer(16000, e -> stopStressTest());
         stressTimer.setRepeats(false);
         stressTimer.start();
-    }
-
-    private void tryFallbackStressTest() {
-        try {
-            System.out.println("Trying fallback stress method...");
-
-            // Fallback method: Use dd and mathematical operations
-            String[] commands = {
-                    "bash", "-c",
-                    "for i in {1.." + Runtime.getRuntime().availableProcessors() + "}; do " +
-                            "while true; do " +
-                            "  echo 'scale=10000; 4*a(1)' | bc -l > /dev/null; " +
-                            "done & " +
-                            "done; " +
-                            "sleep 15; " +
-                            "pkill -f bc"
-            };
-
-            ProcessBuilder pb = new ProcessBuilder(commands);
-            Process process = pb.start();
-
-            new Thread(() -> {
-                try {
-                    int exitCode = process.waitFor();
-                    System.out.println("Fallback stress test completed with exit code: " + exitCode);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }).start();
-
-        } catch (Exception ex) {
-            System.err.println("Fallback stress also failed: " + ex.getMessage());
-            ex.printStackTrace();
-
-            SwingUtilities.invokeLater(() -> {
-                stopStressTest();
-                JOptionPane.showMessageDialog(frame,
-                        "All stress methods failed.\n" +
-                                "Try installing stress: sudo apt-get install stress\n" +
-                                "Or install bc: sudo apt-get install bc",
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE);
-            });
-        }
     }
 
     private void stopStressTest() {
@@ -178,17 +144,13 @@ public class CpuMetric {
         if (stressTimer != null) {
             stressTimer.stop();
         }
-
-        // Kill any running stress processes (safety measure)
-        try {
-            Runtime.getRuntime().exec("pkill -f stress");
-        } catch (Exception ex) {
-            // Ignore errors from pkill
-        }
     }
 
     private class MySwingWorker extends SwingWorker<Boolean, double[]> {
         LinkedList<Double> fifo = new LinkedList<>();
+        private long lastReadTime = 0;
+        private final long CPU_READ_INTERVAL = 1000; // Read CPU stats once per second
+        private double lastCpuUsage = 0.0;
 
         public MySwingWorker() {
             fifo.add(0.0);
@@ -197,36 +159,46 @@ public class CpuMetric {
         @Override
         protected Boolean doInBackground() throws Exception {
             while (!isCancelled()) {
-                // Read CPU stats with 1 second interval
-                cpu.read(1);
+                long currentTime = System.currentTimeMillis();
 
-                // Get idle percentage and convert to CPU usage percentage
-                int idlePercent = cpu.getIdleTime(1);
-                int cpuUsage = 100 - idlePercent;
+                // Only read CPU stats once per second to avoid overwhelming the system
+                if (currentTime - lastReadTime >= CPU_READ_INTERVAL) {
+                    cpu.read(1); // Read with 1 second interval for accurate percentages
 
-                System.out.println("CPU Usage: " + cpuUsage + "%");
+                    // Get idle percentage and convert to CPU usage percentage
+                    int idlePercent = cpu.getIdleTime(1);
+                    lastCpuUsage = 100 - idlePercent;
 
-                fifo.add((double) cpuUsage);
-                if (fifo.size() > 500)
+                    System.out.println("CPU Usage: " + String.format("%.1f", lastCpuUsage) + "%");
+                    lastReadTime = currentTime;
+                }
+
+                // Add current CPU usage to the FIFO buffer
+                fifo.add(lastCpuUsage);
+                if (fifo.size() > 200) // Keep more points for smoother graph
                     fifo.removeFirst();
 
                 double[] array = fifo.stream().mapToDouble(Double::doubleValue).toArray();
                 publish(array);
-                Thread.sleep(1000);
+
+                // Sleep for 250ms to achieve 4Hz refresh rate
+                Thread.sleep(REFRESH_RATE_MS);
             }
             return true;
         }
 
         @Override
         protected void process(List<double[]> chunks) {
-            double[] latest = chunks.get(chunks.size() - 1);
-            chart.updateXYSeries("cpu_usage", null, latest, null);
+            if (!chunks.isEmpty()) {
+                double[] latest = chunks.get(chunks.size() - 1);
+                chart.updateXYSeries("cpu_usage", null, latest, null);
 
-            // Update title with current value
-            double currentValue = latest[latest.length - 1];
-            chart.setTitle("CPU Usage - Current: " + String.format("%.1f", currentValue) + "%");
+                // Update title with current value
+                double currentValue = latest[latest.length - 1];
+                chart.setTitle("CPU Usage - Current: " + String.format("%.1f", currentValue) + "% (4Hz)");
 
-            frame.repaint();
+                frame.repaint();
+            }
         }
     }
 
