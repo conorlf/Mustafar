@@ -141,21 +141,7 @@ public class SysInfoDashboard extends JFrame {
         dialog.setVisible(true);
     }
 
-    public static void main(String[] args) {
-        // Load dictionaries (simulate original template behavior)
-        // You may need to call Dictionary.loadPCIDictionary / loadUSBDictionary here
-        SwingUtilities.invokeLater(() -> {
-            SysInfoDashboard ui = new SysInfoDashboard();
-            ui.setVisible(true);
-        });
-    }
-
     public void showNotification(String message, int durationMs) {
-        if (!SwingUtilities.isEventDispatchThread()) {
-            SwingUtilities.invokeLater(() -> showNotification(message, durationMs));
-            return;
-        }
-
         notificationLabel.setText(message);
         notificationGlass.setVisible(true);
         notificationGlass.revalidate();
@@ -167,6 +153,15 @@ public class SysInfoDashboard extends JFrame {
         notificationTimer = new Timer(durationMs, e -> notificationGlass.setVisible(false));
         notificationTimer.setRepeats(false);
         notificationTimer.start();
+    }
+
+    public static void main(String[] args) {
+        // Load dictionaries (simulate original template behavior)
+        // You may need to call Dictionary.loadPCIDictionary / loadUSBDictionary here
+        SwingUtilities.invokeLater(() -> {
+            SysInfoDashboard ui = new SysInfoDashboard();
+            ui.setVisible(true);
+        });
     }
 
 }
