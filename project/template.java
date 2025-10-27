@@ -4,12 +4,12 @@
  *
  *  Copyright (c) 2024 Mark Burkley (mark.burkley@ul.ie)
  */
-import java.util.Scanner;
+//import java.util.Scanner;
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import java.awt.*;
-import java.io.ByteArrayOutputStream;;
-import java.io.PrintStream;
+//import javax.swing.border.EmptyBorder;
+//import java.awt.*;
+//import java.io.ByteArrayOutputStream;
+//import java.io.PrintStream;
 
 public class template {
     public static void showPCI() {
@@ -111,13 +111,23 @@ public class template {
     }
 
     public static void main(String[] args) {
-        // Load native libraries & dictionaries as before
+        // Load native libraries & dictionaries first
         System.loadLibrary("sysinfo");
-        Dictionary.loadUSBDictionary("project\\usb.ids");
-        Dictionary.loadPCIDictionary("project\\pci.ids");
+        Dictionary.loadUSBDictionary("usb.ids");
+        Dictionary.loadPCIDictionary("pci.ids");
 
+        // Show splash screen
+        JWindow splash = SplashScreen.showSplash("Loading System Dashboard...");
+
+        // Initialize dashboard on the EDT
         SwingUtilities.invokeLater(() -> {
-            SysInfoDashboard ui = new SysInfoDashboard();
-            ui.setVisible(true);
+            SysInfoDashboard dashboard = new SysInfoDashboard();
+
+            // Close splash screen
+            splash.dispose();
+
+            // Show main dashboard
+            dashboard.setVisible(true);
         });
     }
+}
