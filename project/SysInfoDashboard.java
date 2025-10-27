@@ -49,8 +49,13 @@ public class SysInfoDashboard extends JFrame {
         }));
         cardPanel.add(createCard("PCI", "View PCI devices", () -> showOutputWindow("PCI Info", template::showPCI)));
         cardPanel.add(createCard("USB", "View USB devices", () -> showOutputWindow("USB Info", template::showUSB)));
-        cardPanel.add(
-                createCard("Memory", "View memory usage", () -> showOutputWindow("Memory Info", template::showMem)));
+        cardPanel.add(createCard("Memory", "Show Memory Graph", () -> {
+            new Thread(() -> {
+                MemMetric metric = new MemMetric();
+                metric.start();
+            }).start();
+        }));
+
         cardPanel.add(createCard("Disk", "View disks", () -> showOutputWindow("Disk Info", template::showDisk)));
 
         mainPanel.add(cardPanel, BorderLayout.CENTER);
