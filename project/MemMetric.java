@@ -38,18 +38,26 @@ public class MemMetric {
             // Initialize memory and get total memory once
             mem.read();
             totalMemoryKB = mem.getTotal();
+            System.out.println("DEBUG: Total memory = " + totalMemoryKB + " KB");
             fifo.add(0.0);
         }
 
         @Override
         protected Boolean doInBackground() throws Exception {
+            int iteration = 0;
             while (!isCancelled()) {
+                iteration++;
+
                 // Read current memory usage
                 mem.read();
                 long usedMemoryKB = mem.getUsed();
 
+                System.out.println("DEBUG [" + iteration + "]: Used memory = " + usedMemoryKB + " KB");
+
                 // Calculate memory usage percentage
                 double memoryUsagePercent = (usedMemoryKB * 100.0) / totalMemoryKB;
+
+                System.out.println("DEBUG [" + iteration + "]: Usage percentage = " + memoryUsagePercent + "%");
 
                 fifo.add(memoryUsagePercent);
                 if (fifo.size() > 500) {
@@ -60,6 +68,9 @@ public class MemMetric {
                 for (int i = 0; i < fifo.size(); i++) {
                     array[i] = fifo.get(i);
                 }
+
+                System.out.println("DEBUG [" + iteration + "]: Publishing array of size " + array.length
+                        + ", last value = " + array[array.length - 1]);
                 publish(array);
 
                 try {
@@ -73,7 +84,10 @@ public class MemMetric {
 
         @Override
         protected void process(List<double[]> chunks) {
+            System.out.println("DEBUG: process() called with " + chunks.size() + " chunks");
+
             double[] mostRecentDataSet = chunks.get(chunks.size() - 1);
+            System.out.println("DEBUG: Updating chart with data set size " + mostRecentDataSet.length);
 
             chart.updateXYSeries("memoryUsage", null, mostRecentDataSet, null);
             sw.repaintChart();
@@ -84,6 +98,8 @@ public class MemMetric {
             long totalMemoryMB = totalMemoryKB / 1024;
             chart.setTitle("Memory Usage - " + String.format("%.1f", currentUsage) + "% (" +
                     currentUsageMB + " MiB / " + totalMemoryMB + " MiB)");
+
+            System.out.println("DEBUG: Chart title updated to: " + chart.getTitle());
         }
     }
 }
