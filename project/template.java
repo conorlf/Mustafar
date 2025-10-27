@@ -119,11 +119,11 @@ public class template {
         SwingUtilities.invokeLater(() -> {
             SysInfoDashboard dashboard = new SysInfoDashboard();
 
-            // USB monitor (Step 5)
-            UsbMonitor monitor = new UsbMonitor(1000);
-            monitor.setNotificationListener(notification -> dashboard.showNotification(notification, 0));
-            monitor.start();
-
+            try (// USB monitor (Step 5)
+                    UsbMonitor monitor = new UsbMonitor(1000)) {
+                monitor.setNotificationListener(notification -> dashboard.showNotification(notification, 0));
+                monitor.start();
+            }
             dashboard.setVisible(true);
         });
     }
