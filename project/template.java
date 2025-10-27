@@ -120,7 +120,7 @@ public class template {
             SysInfoDashboard dashboard = new SysInfoDashboard();
 
             UsbMonitor monitor = new UsbMonitor(1000);
-            monitor.setNotificationListener(notification -> dashboard.showNotification(notification, 0));
+            monitor.setNotificationListener(message -> dashboard.showNotification(message, 0));
             monitor.start();
 
             // stop the monitor when the window closes
