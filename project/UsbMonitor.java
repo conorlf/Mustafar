@@ -80,7 +80,7 @@ public final class UsbMonitor implements AutoCloseable {
 
     private void notifyListener(String msg) {
         if (listener != null) {
-            SwingUtilities.invokeLater(() -> listener.onUsbChange(msg));
+            SwingUtilities.invokeLater(() -> listener.onNotification(msg));
         }
     }
 }
