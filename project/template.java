@@ -82,10 +82,7 @@ public class template
 
     public static void refreshDiskUsage() {
         disk.read();
-        System.out.println(disk.diskCount());
-        System.out.println(computer.disks.size());
         for (int i = 0; i < disk.diskCount(); i++) {
-            System.out.println(i);
             DiskBlocks db = new DiskBlocks(disk.getUsed(i), disk.getTotal(i), disk.getAvailable(i));
             computer.disks.get(i).diskBlocks.add(db);
         }
