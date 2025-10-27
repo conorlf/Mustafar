@@ -18,6 +18,7 @@ public class CpuMetric {
     cpuInfo cpu = new cpuInfo();
 
     public void start() {
+        cpu.read(0);
         // Create Chart
         chart = QuickChart.getChart(
                 "CPU Usage (Real-Time Demo)",
@@ -48,6 +49,7 @@ public class CpuMetric {
         @Override
         protected Boolean doInBackground() throws Exception {
             while (!isCancelled()) {
+                cpu.read(1);
                 fifo.add((double) cpu.getIdleTime(1));
                 if (fifo.size() > 500)
                     fifo.removeFirst();

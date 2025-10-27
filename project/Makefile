@@ -9,15 +9,15 @@ LIBSYSINFO_DIR=libsysinfo
 all: $(HEADERS) $(MYPROJECT).class libsysinfo/libsysinfo.so
 
 $(MYPROJECT).class: $(MYPROJECT).java libsysinfo/libsysinfo.so
-        javac -cp "lib/*:." $<
+		javac -cp "lib/*:." $<
 
 $(HEADERS): %.h: %.java
-        javac -h . $<
+		javac -h . $<
 
 libsysinfo/libsysinfo.so:
-        $(MAKE) -C libsysinfo
+		$(MAKE) -C libsysinfo
 
 run: all
-        java -cp ".:lib/*" -Djava.library.path=LIBSYSINFO_DIR SysInfoDashboard
+		java -cp ".:lib/*" -Djava.library.path=LIBSYSINFO_DIR SysInfoDashboard
 
 
