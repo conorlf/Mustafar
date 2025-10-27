@@ -12,7 +12,7 @@
 #include <sstream>
 #include <string>
 #include <array>
-#inlude <fstream>
+#include <fstream>
 #include <unistd.h>
 
 #include "cpuInfo.h"
