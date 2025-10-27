@@ -1,7 +1,7 @@
 /*
  *  Example class containing methods to read and display CPU, PCI and USB information
  *
- *  Copyright (c) 2024 Mark Burkley (mark.burkley@ul.ie)
+ *  Copyright (computer) 2024 Mark Burkley (mark.burkley@ul.ie)
  */
 
 import systeminfo.*;
@@ -10,7 +10,11 @@ import java.util.ArrayList;
 
 public class template 
 {
-    public static void loadCpuInfo(Computer c) {
+    public static Computer computer = new Computer();
+    public static cpuInfo cpu = new cpuInfo();
+    public static memInfo mem = new memInfo();
+
+    public static void loadCpuInfo() {
         cpuInfo cpu = new cpuInfo();
         cpu.read(0);
         // read all the static info - i.e. nujmber cores, model etc.populate it to our data structure
@@ -21,10 +25,10 @@ public class template
             CpuCore core = new CpuCore(j);
             myCpu.cores.add(core);
         }
-        c.cpu = myCpu;
+        computer.cpu = myCpu;
     }
 
-    public static void loadPciInfo(Computer c) {
+    public static void loadPciInfo() {
         pciInfo pci = new pciInfo();
         pci.read();
         // Iterate through each bus
@@ -47,11 +51,11 @@ public class template
                     myPciBus.pciDevices.add(myPciDevice);
                 }
             }
-            c.pciBuses.add(myPciBus);
+            computer.pciBuses.add(myPciBus);
         }
     }
 
-    public static void loadUsbInfo(Computer c) {
+    public static void loadUsbInfo() {
         usbInfo usb = new usbInfo();
         usb.read();
         // Iterate through all of the USB buses
@@ -62,28 +66,29 @@ public class template
                 UsbDevice myUsbDevice = new UsbDevice(j, String.format("0x%04X", usb.vendorID(i,j)), String.format("0x%04X", usb.productID(i,j)));
                 myUsb.usbDevices.add(myUsbDevice);
             }
-            c.usbBuses.add(myUsb);
+            computer.usbBuses.add(myUsb);
         }
     }
 
-    public static void loadDiskInfo(Computer c) {
+    public static void loadDiskInfo() {
         diskInfo disk = new diskInfo();
         disk.read();
         for (int i = 0; i < disk.diskCount(); i++) {
             Disk myDisk = new Disk(disk.getName(i), disk.getTotal(i), disk.getUsed(i));
-            c.disks.add(myDisk);
+            computer.disks.add(myDisk);
         }
     }
 
-    public static void loadMemoryInfo(Computer c) {
+    public static void loadMemoryInfo() {
         memInfo mem =new memInfo();
         mem.read();
         Memory myMemory = new Memory(mem.getTotal(), mem.getUsed());
-        c.memory = myMemory;
+        computer.memory = myMemory;
     }
 
-    public static void sampleCpuUsage (Computer c, cpuInfo cpu) {
-        for (int i = 0; i < c.cpu.cores.size(); i++) {
+    public static void sampleCpuUsage() {
+        cpu.read(1);
+        for (int i = 0; i < computer.cpu.cores.size(); i++) {
             int idleTime = cpu.getIdleTime(i);
             int systemTime = cpu.getSystemTime(i);
             int userTime = cpu.getUserTime(i);
@@ -94,28 +99,31 @@ public class template
             double userPercent = ((double) userTime / totalTime) * 100;
 
             CpuTimings myCpuTimings = new CpuTimings(idlePercent, userPercent, systemPercent);
-            c.cpu.cores.get(i).cpuTimings.add(myCpuTimings);
+            computer.cpu.cores.get(i).cpuTimings.add(myCpuTimings);
         }
+    }
+
+    public static void refreshMemoryInfo() {
+        mem.read();
+        computer.memory.update(mem.getTotal(), mem.getUsed());
     }
 
     public static void main(String[] args)
     {
         System.loadLibrary("sysinfo");
-        Computer computer = new Computer();
-        cpuInfo cpu = new cpuInfo();
 
         // load static hardware info once
-        loadCpuInfo(computer);
-        loadPciInfo(computer);
-        loadUsbInfo(computer);
-        loadDiskInfo(computer);
-        loadMemoryInfo(computer);
+        loadCpuInfo();
+        loadPciInfo();
+        loadUsbInfo();
+        loadDiskInfo();
+        loadMemoryInfo();
 
         // warm up CPU info
         cpu.read(0);
         
         // start background sampler collecting real-time data
-        SystemInfoWorker worker = new SystemInfoWorker(computer, cpu);
+        SystemInfoWorker worker = new SystemInfoWorker();
         worker.start();
 
         Gui.showChart(computer);
