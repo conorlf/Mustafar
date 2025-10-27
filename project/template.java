@@ -126,10 +126,7 @@ public class template
         SystemInfoWorker worker = new SystemInfoWorker();
         worker.start();
 
-        Gui.showChart(computer);
-
-        worker.stopWorker();
-
+        Gui.showChart(computer, worker);
     }
 }
 

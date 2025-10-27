@@ -17,7 +17,7 @@ import systeminfo.CpuTimings;
 
 public class Gui {
 
-    public static void showChart(Computer computer) {
+    public static void showChart(Computer computer, SystemInfoWorker worker) {
 
         TimeSeriesCollection datasetCpu = new TimeSeriesCollection();
         List<TimeSeries> coreSeries = new ArrayList<>();
@@ -41,6 +41,14 @@ public class Gui {
         JFrame frame = new JFrame();
         frame.add(tabs);
 
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent e) {
+                worker.stopWorker(); 
+            }
+        });
+        
         // cpu graph config
         XYPlot cpuPlot = cpuChart.getXYPlot();
         NumberAxis cpuRange = (NumberAxis) cpuPlot.getRangeAxis();
