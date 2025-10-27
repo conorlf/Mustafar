@@ -8,17 +8,15 @@ public class SysInfoDashboard extends JFrame {
 
     private final Color bgColor = new Color(25, 25, 25);
     private final Color panelColor = new Color(40, 40, 40);
-    // private final Color accentColor = new Color(0, 122, 204);
     private final Color textColor = new Color(230, 230, 230);
     private final JPanel notificationGlass;
     private final JLabel notificationLabel;
     private Timer notificationTimer;
 
     public SysInfoDashboard() {
-
         super("System Information Dashboard");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(900, 600);
+        setSize(1000, 600);
         setLocationRelativeTo(null);
 
         JPanel mainPanel = new JPanel(new BorderLayout());
@@ -35,32 +33,87 @@ public class SysInfoDashboard extends JFrame {
         topBar.add(title, BorderLayout.WEST);
         mainPanel.add(topBar, BorderLayout.NORTH);
 
-        // Grid layout for cards
+        // Grid layout for cards/panels
         JPanel cardPanel = new JPanel(new GridLayout(2, 3, 20, 20));
         cardPanel.setBackground(bgColor);
         cardPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        // Add subsystem cards
-        cardPanel.add(createCard("CPU", "Show CPU Graph", () -> {
-            new Thread(() -> {
-                CpuMetric metric = new CpuMetric();
-                metric.start();
-            }).start();
-        }));
-        cardPanel.add(createCard("PCI", "View PCI devices", () -> showOutputWindow("PCI Info", template::showPCI)));
-        cardPanel.add(createCard("USB", "View USB devices", () -> showOutputWindow("USB Info", template::showUSB)));
-        cardPanel.add(createCard("Memory", "Show Memory Graph", () -> {
-            new Thread(() -> {
-                MemMetric memmetric = new MemMetric();
-                memmetric.start();
-            }).start();
+        // CPU card
+        cardPanel.add(createCard("CPU", "Show CPU Specs", () -> {
+            showOutputWindow("CPU Info", template::showCPU);
         }));
 
-        cardPanel.add(createCard("Disk", "View disks", () -> showOutputWindow("Disk Info", template::showDisk)));
+        // Memory card
+        cardPanel.add(createCard("Memory", "Show Total Memory", () -> {
+            showOutputWindow("Memory Info", template::showMem);
+        }));
+
+        // Disk card
+        cardPanel.add(createCard("Disk", "Show Disk Usage", () -> {
+            showOutputWindow("Disk Info", template::showDisk);
+        }));
+
+        // PCI panel (scrollable text)
+        StringBuilder pciContent = new StringBuilder();
+        try {
+            pciInfo pci = new pciInfo();
+            pci.read();
+            for (int i = 0; i < pci.busCount(); i++) {
+                for (int j = 0; j < 32; j++) {
+                    for (int k = 0; k < 8; k++) {
+                        if (pci.functionPresent(i, j, k) > 0) {
+                            int vendorId = pci.vendorID(i, j, k);
+                            int productId = pci.productID(i, j, k);
+                            String vendorName = Dictionary.getPCIVendorName(vendorId);
+                            String deviceName = Dictionary.getPCIDeviceName(vendorId, productId);
+
+                            if (vendorName == null || vendorName.isEmpty())
+                                vendorName = "Unknown Vendor (0x" + String.format("%04X", vendorId) + ")";
+                            if (deviceName == null || deviceName.isEmpty())
+                                deviceName = "Unknown Device (0x" + String.format("%04X", productId) + ")";
+
+                            pciContent.append(String.format("%s : %s Bus: %02d\n", vendorName, deviceName, i));
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            pciContent.append("Failed to read PCI info.\n");
+        }
+        cardPanel.add(createTextPanel("PCI Devices", pciContent.toString()));
+
+        // USB panel (scrollable text)
+        StringBuilder usbContent = new StringBuilder();
+        try {
+            usbInfo usb = new usbInfo();
+            usb.read();
+            for (int i = 1; i <= usb.busCount(); i++) {
+                for (int j = 1; j <= usb.deviceCount(i); j++) {
+                    int vendorId = usb.vendorID(i, j);
+                    int productId = usb.productID(i, j);
+
+                    if (vendorId == 0 && productId == 0)
+                        continue;
+
+                    String vendorName = Dictionary.getUSBVendorName(vendorId);
+                    String deviceName = Dictionary.getUSBDeviceName(vendorId, productId);
+
+                    if (vendorName == null || vendorName.isEmpty())
+                        vendorName = "Unknown Vendor (0x" + String.format("%04X", vendorId) + ")";
+                    if (deviceName == null || deviceName.isEmpty())
+                        deviceName = "Unknown Device (0x" + String.format("%04X", productId) + ")";
+
+                    usbContent.append(String.format("%s : %s Bus: %02d\n", vendorName, deviceName, i));
+                }
+            }
+        } catch (Exception e) {
+            usbContent.append("Failed to read USB info.\n");
+        }
+        cardPanel.add(createTextPanel("USB Devices", usbContent.toString()));
 
         mainPanel.add(cardPanel, BorderLayout.CENTER);
 
-        // In constructor, after main panel setup:
+        // Notification glass pane
         notificationGlass = new JPanel(new GridBagLayout()) {
             @Override
             public boolean isOpaque() {
@@ -73,11 +126,9 @@ public class SysInfoDashboard extends JFrame {
         notificationLabel.setOpaque(true);
         notificationLabel.setBackground(new Color(0, 122, 204, 220)); // semi-transparent blue
         notificationLabel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-
         notificationGlass.add(notificationLabel, new GridBagConstraints());
         notificationGlass.setVisible(false);
         setGlassPane(notificationGlass);
-
     }
 
     private JPanel createCard(String title, String description, Runnable onClick) {
@@ -112,16 +163,32 @@ public class SysInfoDashboard extends JFrame {
         return card;
     }
 
-    /**
-     * Run a template method and capture its System.out output into a scrollable
-     * modal window
-     */
+    private JPanel createTextPanel(String title, String content) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(panelColor);
+        panel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(70, 70, 70)),
+                title,
+                0, 0, new Font("Segoe UI", Font.BOLD, 14), textColor));
+
+        JTextArea textArea = new JTextArea(content);
+        textArea.setFont(new Font("Monospaced", Font.BOLD, 14)); // thicker text
+        textArea.setForeground(textColor);
+        textArea.setBackground(panelColor);
+        textArea.setEditable(false);
+        textArea.setLineWrap(true);
+        textArea.setWrapStyleWord(true);
+
+        JScrollPane scroll = new JScrollPane(textArea);
+        panel.add(scroll, BorderLayout.CENTER);
+        return panel;
+    }
+
     private void showOutputWindow(String title, Runnable templateMethod) {
         JDialog dialog = new JDialog(this, title, Dialog.ModalityType.APPLICATION_MODAL);
         dialog.setSize(600, 400);
         dialog.setLocationRelativeTo(this);
 
-        // Capture System.out output
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         PrintStream ps = new PrintStream(baos);
         PrintStream oldOut = System.out;
@@ -136,9 +203,7 @@ public class SysInfoDashboard extends JFrame {
             System.setOut(oldOut);
         }
 
-        String output = baos.toString();
-
-        JTextArea textArea = new JTextArea(output);
+        JTextArea textArea = new JTextArea(baos.toString());
         textArea.setFont(new Font("Monospaced", Font.PLAIN, 14));
         textArea.setBackground(panelColor);
         textArea.setForeground(textColor);
@@ -166,12 +231,9 @@ public class SysInfoDashboard extends JFrame {
     }
 
     public static void main(String[] args) {
-        // Load dictionaries (simulate original template behavior)
-        // You may need to call Dictionary.loadPCIDictionary / loadUSBDictionary here
         SwingUtilities.invokeLater(() -> {
             SysInfoDashboard ui = new SysInfoDashboard();
             ui.setVisible(true);
         });
     }
-
 }
