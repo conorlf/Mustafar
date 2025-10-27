@@ -18,17 +18,21 @@ public class CpuMetric {
     cpuInfo cpu = new cpuInfo();
 
     public void start() {
-        cpu.read(0);
+        // Initialize CPU monitoring
+        cpu.read();
+
         // Create Chart
         chart = QuickChart.getChart(
-                "CPU Usage (Real-Time Demo)",
+                "CPU Usage (Real-Time)",
                 "Time",
-                "Value",
-                "randomWalk",
+                "CPU Usage %",
+                "cpu_usage",
                 new double[] { 0 },
                 new double[] { 0 });
         chart.getStyler().setLegendVisible(false);
         chart.getStyler().setXAxisTicksVisible(false);
+        chart.getStyler().setYAxisMin(0.0);
+        chart.getStyler().setYAxisMax(100.0);
 
         // Show it
         sw = new SwingWrapper<>(chart);
@@ -49,8 +53,16 @@ public class CpuMetric {
         @Override
         protected Boolean doInBackground() throws Exception {
             while (!isCancelled()) {
+                // Read CPU stats with 1 second interval
                 cpu.read(1);
-                fifo.add((double) cpu.getIdleTime(1));
+
+                // Get idle percentage and convert to CPU usage percentage
+                int idlePercent = cpu.getIdleTime(1);
+                int cpuUsage = 100 - idlePercent;
+
+                System.out.println("Idle: " + idlePercent + "%, CPU Usage: " + cpuUsage + "%");
+
+                fifo.add((double) cpuUsage);
                 if (fifo.size() > 500)
                     fifo.removeFirst();
 
@@ -64,8 +76,17 @@ public class CpuMetric {
         @Override
         protected void process(List<double[]> chunks) {
             double[] latest = chunks.get(chunks.size() - 1);
-            chart.updateXYSeries("randomWalk", null, latest, null);
+            chart.updateXYSeries("cpu_usage", null, latest, null);
+
+            // Update title with current value
+            double currentValue = latest[latest.length - 1];
+            chart.setTitle("CPU Usage - Current: " + String.format("%.1f", currentValue) + "%");
+
             sw.repaintChart();
         }
+    }
+
+    public static void main(String[] args) {
+        new CpuMetric().start();
     }
 }
