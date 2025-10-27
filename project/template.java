@@ -8,7 +8,7 @@ import java.util.Scanner;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.io.ByteArrayOutputStream;;
+import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
 public class template {
@@ -121,3 +121,4 @@ public class template {
             ui.setVisible(true);
         });
     }
+}
