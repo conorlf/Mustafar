@@ -101,7 +101,7 @@ public class template {
 
     public static void main(String[] args) {
         System.loadLibrary("sysinfo");
-        showMem();
+        long startTime = System.currentTimeMillis();
         try {
             Dictionary.loadUSBDictionary("usb.ids");
             System.out.println("USB dictionary loaded successfully");
@@ -115,7 +115,8 @@ public class template {
         } catch (Exception e) {
             System.err.println("Failed to load PCI dictionary: " + e.getMessage());
         }
-
+        long endTime = System.currentTimeMillis();
+        System.out.println("Dictionaries loaded in " + (endTime - startTime) + " ms");
         SwingUtilities.invokeLater(() -> {
             SysInfoDashboard dashboard = new SysInfoDashboard();
 
