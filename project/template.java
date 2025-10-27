@@ -6,10 +6,10 @@
  */
 //import java.util.Scanner;
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import java.awt.*;
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
+// import javax.swing.border.EmptyBorder;
+// import java.awt.*;
+// import java.io.ByteArrayOutputStream;
+// import java.io.PrintStream;
 
 public class template {
     public static void showPCI() {
@@ -48,23 +48,36 @@ public class template {
     }
 
     public static void showUSB() {
+        // Option 1: Use the monitoring data if available
+        System.out.println("\n=== Current USB Devices ===");
+
+        // If you have access to the monitor instance, you could use:
+        // List<usbDevice> currentDevices = monitor.getCurrentDevices();
+
+        // Option 2: Do a fresh scan (original behavior but more reliable)
         usbInfo usb = new usbInfo();
         usb.read();
-        System.out.println("\nThis machine has " +
-                usb.busCount() + " USB buses ");
+
+        System.out.println("This machine has " + usb.busCount() + " USB buses");
 
         // Iterate through all of the USB buses
         for (int i = 1; i <= usb.busCount(); i++) {
-            System.out.println("Bus " + i + " has " +
-                    usb.deviceCount(i) + " devices");
+            System.out.println("Bus " + i + " has " + usb.deviceCount(i) + " devices");
 
             // Iterate through all of the USB devices on the bus
             for (int j = 1; j <= usb.deviceCount(i); j++) {
-                System.out.println("Bus " + i + " device " + j +
-                        " has vendor " + String.format("0x%04X", usb.vendorID(i, j)) +
-                        " and product " + String.format("0x%04X", usb.productID(i, j)) + " and vendor name "
-                        + Dictionary.getUSBVendorName(usb.vendorID(i, j)) + " and device name "
-                        + Dictionary.getUSBDeviceName(usb.vendorID(i, j), usb.productID(i, j)));
+                try {
+                    int vendorId = usb.vendorID(i, j);
+                    int productId = usb.productID(i, j);
+
+                    System.out.println("Bus " + i + " device " + j +
+                            " has vendor " + String.format("0x%04X", vendorId) +
+                            " and product " + String.format("0x%04X", productId) +
+                            " and vendor name " + Dictionary.getUSBVendorName(vendorId) +
+                            " and device name " + Dictionary.getUSBDeviceName(vendorId, productId));
+                } catch (Exception e) {
+                    System.out.println("Bus " + i + " device " + j + " - Error reading device info");
+                }
             }
         }
     }
@@ -119,11 +132,18 @@ public class template {
         SwingUtilities.invokeLater(() -> {
             SysInfoDashboard dashboard = new SysInfoDashboard();
 
-            UsbMonitor monitor = new UsbMonitor(1000);
-            monitor.setNotificationListener(message -> dashboard.showNotification(message, 3000));
+            UsbMonitor monitor = new UsbMonitor(2000); // 2 second interval
+            monitor.setNotificationListener(message -> {
+                dashboard.showNotification(message, 3000);
+                // Force refresh of USB display if it's currently open
+                // You might want to add this capability to your UI
+            });
+
+            // Do initial scan
+            monitor.scanOnce();
             monitor.start();
 
-            // stop the monitor when the window closes
+            // Stop the monitor when the window closes
             dashboard.addWindowListener(new java.awt.event.WindowAdapter() {
                 @Override
                 public void windowClosing(java.awt.event.WindowEvent e) {
