@@ -1,4 +1,4 @@
-MODULES=sysInfo cpuInfo pciInfo usbInfo diskInfo 
+MODULES=sysInfo cpuInfo pciInfo usbInfo diskInfo memInfo
 SOURCES=$(MODULES:=.cc)
 HEADERS=$(MODULES:%=../%.h)
 
