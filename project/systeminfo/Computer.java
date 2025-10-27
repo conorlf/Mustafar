@@ -27,6 +27,14 @@ public class Computer{
 
         for (CpuCore core : this.cpu.cores) {
             System.out.println("  Core index: " + core.index + " (History size: " + core.cpuTimings.size() + ")");
+            
+            for (CpuTimings timing : core.cpuTimings) {
+                System.out.println(
+                    "s | idle=" + timing.idlePercent +
+                    "% | user=" + timing.userPercent +
+                    "% | system=" + timing.systemPercent + "%"
+                );
+            }
         }
 
         System.out.println("\n=== MEMORY INFO ===");

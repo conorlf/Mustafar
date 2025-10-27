@@ -66,8 +66,6 @@ void MemInfo::_parseMem (char buffer[])
     if (name != "Mem:")
         return;
 
-    cout<<"total="<<total<<", used="<<used<<endl;
-
     _total = total;
     _used = used;
 }

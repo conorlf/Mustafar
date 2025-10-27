@@ -10,76 +10,6 @@ import java.util.ArrayList;
 
 public class template 
 {
-    public static void showPCI()
-    {}
-
-    public static void showUSB()
-    {
-        usbInfo usb = new usbInfo();
-        usb.read();
-        System.out.println("\nThis machine has "+
-            usb.busCount()+" USB buses ");
-
-        // Iterate through all of the USB buses
-        for (int i = 1; i <= usb.busCount(); i++) {
-            System.out.println("Bus "+i+" has "+
-                usb.deviceCount(i)+" devices");
-
-            // Iterate through all of the USB devices on the bus
-            for (int j = 1; j <= usb.deviceCount(i); j++) {
-                System.out.println("Bus "+i+" device "+j+
-                    " has vendor "+String.format("0x%04X", usb.vendorID(i,j))+
-                    " and product "+String.format("0x%04X", usb.productID(i,j)));
-            }
-        }
-    }
-
-    public static void showCPU()
-    {
-        cpuInfo cpu = new cpuInfo();
-        cpu.read(0);
-
-        // Show CPU model, CPU sockets and cores per socket
-        System.out.println("CPU " + cpu.getModel() + " has "+
-            cpu.socketCount() + " sockets each with "+
-            cpu.coresPerSocket() + " cores");
-
-        // Show sizes of L1,L2 and L3 cache
-        System.out.println("l1d="+cpu.l1dCacheSize()+
-            ", l1i="+cpu.l1iCacheSize()+
-            ", l2="+cpu.l2CacheSize()+
-            ", l3="+cpu.l3CacheSize());
-
-        // Sleep for 1 second and display the idle time percentage for
-        // core 1.  This assumes 10Hz so in one second we have 100
-        cpu.read(1);
-        System.out.println("core 1 idle="+cpu.getIdleTime(1)+"%");
-    }
-
-    public static void showDisk()
-    {
-        diskInfo disk = new diskInfo();
-        disk.read();
-
-        // Iterate through all of the disks
-        for (int i = 0; i < disk.diskCount(); i++) {
-            System.out.println ("disk "+disk.getName(i)+" has "+
-                disk.getTotal(i)+" blocks, of which "+
-                disk.getUsed(i)+" are used");
-        }
-    }
-
-    public static void showMem()
-    {
-        memInfo mem = new memInfo();
-        mem.read();
-
-        System.out.println ("There is "+mem.getTotal()+" memory of which "+
-            mem.getUsed()+" is used");
-    }
-
-
-
     public static void loadCpuInfo(Computer c) {
         cpuInfo cpu = new cpuInfo();
         cpu.read(0);
@@ -146,38 +76,13 @@ public class template
     }
 
     public static void loadMemoryInfo(Computer c) {
-        memInfo mem = new memInfo();
+        memInfo mem =new memInfo();
         mem.read();
         Memory myMemory = new Memory(mem.getTotal(), mem.getUsed());
         c.memory = myMemory;
     }
 
-    public static void main(String[] args)
-    {
-        Computer c = new Computer();
-        System.loadLibrary("sysinfo");
-        sysInfo info = new sysInfo();
-
-        loadCpuInfo(c);
-        loadPciInfo(c);
-        loadUsbInfo(c);
-        loadDiskInfo(c);
-        loadMemoryInfo(c);
-
-        //c.dumpToConsole();
-        
-        cpuInfo cpu = new cpuInfo();
-        cpu.read(0);
-        for (int i = 1; i <= 15; i++) {
-            sampleCpuUsage(c, cpu, i);
-        }
-
-        Gui.showChart(c);
-    }
- 
-
-    public static void sampleCpuUsage (Computer c, cpuInfo cpu, int secondsSinceStart) {
-        cpu.read(1);
+    public static void sampleCpuUsage (Computer c, cpuInfo cpu) {
         for (int i = 0; i < c.cpu.cores.size(); i++) {
             int idleTime = cpu.getIdleTime(i);
             int systemTime = cpu.getSystemTime(i);
@@ -188,22 +93,35 @@ public class template
             double systemPercent = ((double) systemTime / totalTime) * 100;
             double userPercent = ((double) userTime / totalTime) * 100;
 
-            CpuTimings myCpuTimings = new CpuTimings(secondsSinceStart, idlePercent, userPercent, systemPercent);
+            CpuTimings myCpuTimings = new CpuTimings(idlePercent, userPercent, systemPercent);
             c.cpu.cores.get(i).cpuTimings.add(myCpuTimings);
         }
     }
-    public static void old_main()
+
+    public static void main(String[] args)
     {
         System.loadLibrary("sysinfo");
-        sysInfo info = new sysInfo();
+        Computer computer = new Computer();
         cpuInfo cpu = new cpuInfo();
-        cpu.read(0);
 
-        showCPU();
-        showPCI();
-        showUSB();
-        showDisk();
-        showMem();
+        // load static hardware info once
+        loadCpuInfo(computer);
+        loadPciInfo(computer);
+        loadUsbInfo(computer);
+        loadDiskInfo(computer);
+        loadMemoryInfo(computer);
+
+        // warm up CPU info
+        cpu.read(0);
+        
+        // start background sampler collecting real-time data
+        SystemInfoWorker worker = new SystemInfoWorker(computer, cpu);
+        worker.start();
+
+        Gui.showChart(computer);
+
+        worker.stopWorker();
+
     }
 }
 
