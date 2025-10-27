@@ -51,8 +51,8 @@ public class SysInfoDashboard extends JFrame {
         cardPanel.add(createCard("USB", "View USB devices", () -> showOutputWindow("USB Info", template::showUSB)));
         cardPanel.add(createCard("Memory", "Show Memory Graph", () -> {
             new Thread(() -> {
-                MemMetric metric = new MemMetric();
-                metric.start();
+                MemMetric memmetric = new MemMetric();
+                memmetric.start();
             }).start();
         }));
 
