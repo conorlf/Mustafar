@@ -42,7 +42,7 @@ public class Computer{
 
         System.out.println("\n=== DISK INFO ===");
         for (Disk d : this.disks) {
-            System.out.println("Disk: " + d.name + ", Total blocks: " + d.blockCount + ", Used blocks: " + d.usedBlockCount);
+            System.out.println("Disk: " + d.name);
         }
 
         System.out.println("\n=== USB INFO ===");

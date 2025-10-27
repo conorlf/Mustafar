@@ -14,6 +14,8 @@ import org.jfree.data.time.TimeSeriesCollection;
 import systeminfo.Computer;
 import systeminfo.CpuCore;
 import systeminfo.CpuTimings;
+import systeminfo.Disk;
+import systeminfo.DiskBlocks;
 
 public class Gui {
 
@@ -32,12 +34,24 @@ public class Gui {
         TimeSeries memTimeSeries = new TimeSeries("Memory Usage");
         datasetMem.addSeries(memTimeSeries);
 
+        TimeSeriesCollection datasetDisk = new TimeSeriesCollection();
+        List<TimeSeries> diskSeries = new ArrayList<>();
+
+        for (Disk disk : computer.disks) {
+            TimeSeries diskTimeSeries = new TimeSeries(disk.name);
+            diskSeries.add(diskTimeSeries);
+            datasetDisk.addSeries(diskTimeSeries);
+        }
+
         JFreeChart cpuChart = ChartFactory.createTimeSeriesChart("CPU Usage", "Time", "Usage (%)", datasetCpu, true, true, false);
         JFreeChart memChart = ChartFactory.createTimeSeriesChart("Memory Usage", "Time", "Usage (%)", datasetMem, true, false, false);
+        JFreeChart diskChart = ChartFactory.createTimeSeriesChart("Disk Usage", "Time", "Usage (%)", datasetDisk, true, true, false);
+
 
         JTabbedPane tabs = new JTabbedPane();
         tabs.addTab("CPU", new ChartPanel(cpuChart));
         tabs.addTab("Memory", new ChartPanel(memChart));
+        tabs.addTab("Disk", new ChartPanel(diskChart));
         JFrame frame = new JFrame();
         frame.add(tabs);
 
@@ -48,7 +62,7 @@ public class Gui {
                 worker.stopWorker(); 
             }
         });
-        
+
         // cpu graph config
         XYPlot cpuPlot = cpuChart.getXYPlot();
         NumberAxis cpuRange = (NumberAxis) cpuPlot.getRangeAxis();
@@ -67,10 +81,20 @@ public class Gui {
         XYLineAndShapeRenderer memRenderer = (XYLineAndShapeRenderer) memPlot.getRenderer();
         memRenderer.setDefaultShapesVisible(false);
 
+        // disk graph config
+        XYPlot diskPlot = diskChart.getXYPlot();
+        NumberAxis diskRange = (NumberAxis) diskPlot.getRangeAxis();
+        diskRange.setRange(0.0, 100.0);
+        DateAxis diskDomain = (DateAxis) diskPlot.getDomainAxis();
+        cpuDomain.setFixedAutoRange(60000);
+        XYLineAndShapeRenderer diskRenderer = (XYLineAndShapeRenderer) diskPlot.getRenderer();
+        diskRenderer.setDefaultShapesVisible(false);
+
         frame.setSize(900, 600);
         frame.setVisible(true);
 
         int[] lastPlotted = new int[computer.cpu.cores.size()];
+        int[] lastPlottedDisk = new int[computer.disks.size()];
         // updates cpu chart once per second on swing thread
         new javax.swing.Timer(1000, e -> {
             Second now = new Second(); 
@@ -94,6 +118,23 @@ public class Gui {
             memTimeSeries.addOrUpdate(now, computer.memory.usagePercent);
             while (memTimeSeries.getItemCount() > 0 && memTimeSeries.getTimePeriod(0).getLastMillisecond() < now.getFirstMillisecond() - 60000) { 
                 memTimeSeries.delete(0, 0);
+            }
+            
+            // updates disk chart
+            for (int i = 0; i < computer.disks.size(); i++) {
+                Disk disk = computer.disks.get(i);
+                TimeSeries ts = diskSeries.get(i);
+
+                for (int j = lastPlottedDisk[i]; j < disk.diskBlocks.size(); j++) {
+                    DiskBlocks t = disk.diskBlocks.get(j);
+                    ts.addOrUpdate(now, t.usagePercent);
+                }
+                lastPlottedDisk[i] = disk.diskBlocks.size();
+
+                // deletes points older than 60 seconds as it's not being displayed on graph
+                while (ts.getItemCount() > 0 && ts.getTimePeriod(0).getLastMillisecond() < now.getFirstMillisecond() - 60000) { 
+                    ts.delete(0, 0);
+                }
             }
         }).start();
     }

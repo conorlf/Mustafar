@@ -13,9 +13,9 @@ public class template
     public static Computer computer = new Computer();
     public static cpuInfo cpu = new cpuInfo();
     public static memInfo mem = new memInfo();
+    public static diskInfo disk = new diskInfo();
 
     public static void loadCpuInfo() {
-        cpuInfo cpu = new cpuInfo();
         cpu.read(0);
         // read all the static info - i.e. nujmber cores, model etc.populate it to our data structure
         Cpu myCpu = new Cpu(cpu.getModel(), cpu.socketCount(), cpu.coresPerSocket(), cpu.l1dCacheSize(), cpu.l1iCacheSize(), cpu.l2CacheSize(), cpu.l3CacheSize());
@@ -70,17 +70,28 @@ public class template
         }
     }
 
+    // disks are one based
     public static void loadDiskInfo() {
-        diskInfo disk = new diskInfo();
         disk.read();
         for (int i = 0; i < disk.diskCount(); i++) {
-            Disk myDisk = new Disk(disk.getName(i), disk.getTotal(i), disk.getUsed(i));
+            Disk myDisk = new Disk(i, disk.getName(i));
             computer.disks.add(myDisk);
+        }
+        refreshDiskUsage();
+    }
+
+    public static void refreshDiskUsage() {
+        disk.read();
+        System.out.println(disk.diskCount());
+        System.out.println(computer.disks.size());
+        for (int i = 0; i < disk.diskCount(); i++) {
+            System.out.println(i);
+            DiskBlocks db = new DiskBlocks(disk.getUsed(i), disk.getTotal(i), disk.getAvailable(i));
+            computer.disks.get(i).diskBlocks.add(db);
         }
     }
 
     public static void loadMemoryInfo() {
-        memInfo mem =new memInfo();
         mem.read();
         Memory myMemory = new Memory(mem.getTotal(), mem.getUsed());
         computer.memory = myMemory;
@@ -108,6 +119,8 @@ public class template
         computer.memory.update(mem.getTotal(), mem.getUsed());
     }
 
+
+
     public static void main(String[] args)
     {
         System.loadLibrary("sysinfo");
@@ -120,8 +133,8 @@ public class template
         loadMemoryInfo();
 
         // warm up CPU info
-        cpu.read(0);
-        
+        cpu.read(0);        
+
         // start background sampler collecting real-time data
         SystemInfoWorker worker = new SystemInfoWorker();
         worker.start();

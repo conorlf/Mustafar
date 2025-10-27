@@ -90,6 +90,7 @@ void DiskInfo::_parseDisk (char buffer[])
 
 void DiskInfo::read()
 {
+    _diskCount = 0; // reset it as they were accumulating after each call
     std::array<char, 4096> buffer;
     std::unique_ptr<FILE, decltype(&pclose)> pipe(popen("df", "r"), pclose);
 

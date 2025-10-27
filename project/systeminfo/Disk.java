@@ -1,13 +1,16 @@
 package systeminfo;
 
-public class Disk{
-    public String name;
-    public long blockCount;
-    public long usedBlockCount;
+import java.util.List;
+import java.util.ArrayList;
 
-    public Disk(String name, long blockCount, long usedBlockCount){
+public class Disk{
+    public int index;
+    public String name;
+    public List<DiskBlocks> diskBlocks;
+
+    public Disk(int index, String name){
+        this.index = index;
         this.name = name;
-        this.blockCount = blockCount;
-        this.usedBlockCount = usedBlockCount;
+        this.diskBlocks = new ArrayList<>();
     }
 }
