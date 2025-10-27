@@ -4,7 +4,7 @@
  *
  *  Copyright (c) 2024 Mark Burkley (mark.burkley@ul.ie)
  */
-import java.util.Scanner;
+//import java.util.Scanner;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
@@ -111,14 +111,21 @@ public class template {
     }
 
     public static void main(String[] args) {
-        // Load native libraries & dictionaries as before
+        // Load libraries and dictionaries
         System.loadLibrary("sysinfo");
-        Dictionary.loadUSBDictionary("project\\usb.ids");
-        Dictionary.loadPCIDictionary("project\\pci.ids");
+        Dictionary.loadUSBDictionary("usb.ids");
+        Dictionary.loadPCIDictionary("pci.ids");
 
         SwingUtilities.invokeLater(() -> {
-            SysInfoDashboard ui = new SysInfoDashboard();
-            ui.setVisible(true);
+            SysInfoDashboard dashboard = new SysInfoDashboard();
+
+            // USB monitor (Step 5)
+            UsbMonitor monitor = new UsbMonitor(1000);
+            monitor.setNotificationListener(notification -> dashboard.showNotification(notification, 0));
+            monitor.start();
+
+            dashboard.setVisible(true);
         });
     }
+
 }

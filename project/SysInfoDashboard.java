@@ -10,8 +10,12 @@ public class SysInfoDashboard extends JFrame {
     private final Color panelColor = new Color(40, 40, 40);
     // private final Color accentColor = new Color(0, 122, 204);
     private final Color textColor = new Color(230, 230, 230);
+    private final JPanel notificationGlass;
+    private final JLabel notificationLabel;
+    private Timer notificationTimer;
 
     public SysInfoDashboard() {
+
         super("System Information Dashboard");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(900, 600);
@@ -45,6 +49,25 @@ public class SysInfoDashboard extends JFrame {
         cardPanel.add(createCard("Disk", "View disks", () -> showOutputWindow("Disk Info", template::showDisk)));
 
         mainPanel.add(cardPanel, BorderLayout.CENTER);
+
+        // In constructor, after main panel setup:
+        notificationGlass = new JPanel(new GridBagLayout()) {
+            @Override
+            public boolean isOpaque() {
+                return false;
+            }
+        };
+        notificationLabel = new JLabel("", SwingConstants.CENTER);
+        notificationLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        notificationLabel.setForeground(Color.WHITE);
+        notificationLabel.setOpaque(true);
+        notificationLabel.setBackground(new Color(0, 122, 204, 220)); // semi-transparent blue
+        notificationLabel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+
+        notificationGlass.add(notificationLabel, new GridBagConstraints());
+        notificationGlass.setVisible(false);
+        setGlassPane(notificationGlass);
+
     }
 
     private JPanel createCard(String title, String description, Runnable onClick) {
@@ -126,4 +149,24 @@ public class SysInfoDashboard extends JFrame {
             ui.setVisible(true);
         });
     }
+
+    public void showNotification(String message, int durationMs) {
+        if (!SwingUtilities.isEventDispatchThread()) {
+            SwingUtilities.invokeLater(() -> showNotification(message, durationMs));
+            return;
+        }
+
+        notificationLabel.setText(message);
+        notificationGlass.setVisible(true);
+        notificationGlass.revalidate();
+        notificationGlass.repaint();
+
+        if (notificationTimer != null && notificationTimer.isRunning())
+            notificationTimer.stop();
+
+        notificationTimer = new Timer(durationMs, e -> notificationGlass.setVisible(false));
+        notificationTimer.setRepeats(false);
+        notificationTimer.start();
+    }
+
 }
