@@ -1,90 +1,141 @@
-import java.util.LinkedList;
-import java.util.List;
-import javax.swing.SwingWorker;
-import org.knowm.xchart.QuickChart;
-import org.knowm.xchart.SwingWrapper;
-import org.knowm.xchart.XYChart;
+/*
+ * Simplified version of the template class
+ * showing CPU, RAM, Disk, PCI, and USB info in clean formats
+ */
 
-public class MemMetric {
+import javax.swing.*;
 
-    private MySwingWorker mySwingWorker;
-    private SwingWrapper<XYChart> sw;
-    private XYChart chart;
-    private memInfo mem = new memInfo();
+public class template {
 
-    public void start() {
-        // Initialize memory info to get total memory
-        mem.read();
-        long totalMemoryBytes = mem.getTotal();
-        long totalMemoryMB = totalMemoryBytes / (1024 * 1024);
+    public static void showCPU() {
+        cpuInfo cpu = new cpuInfo();
+        cpu.read(0);
 
-        chart = QuickChart.getChart(
-                "Memory Usage - Total: " + totalMemoryMB + " MiB",
-                "Time",
-                "Memory Usage (MiB)",
-                "memory_usage",
-                new double[] { 0 },
-                new double[] { 0 });
-        chart.getStyler().setLegendVisible(false);
-        chart.getStyler().setXAxisTicksVisible(false);
-        chart.getStyler().setYAxisMin(0.0);
-        chart.getStyler().setYAxisMax((double) totalMemoryMB); // Set max to total memory in MB
-
-        sw = new SwingWrapper<>(chart);
-        sw.displayChart();
-
-        mySwingWorker = new MySwingWorker(totalMemoryMB);
-        mySwingWorker.execute();
+        System.out.println("=== CPU Information ===");
+        System.out.println("Model: " + cpu.getModel());
+        System.out.println("Sockets: " + cpu.socketCount());
+        System.out.println("Cores per socket: " + cpu.coresPerSocket());
+        System.out.println("Cache Sizes:");
+        System.out.println("  L1d: " + cpu.l1dCacheSize());
+        System.out.println("  L1i: " + cpu.l1iCacheSize());
+        System.out.println("  L2 : " + cpu.l2CacheSize());
+        System.out.println("  L3 : " + cpu.l3CacheSize());
     }
 
-    private class MySwingWorker extends SwingWorker<Boolean, double[]> {
-        LinkedList<Double> fifo = new LinkedList<>();
-        private final long totalMemoryMB;
+    public static void showMem() {
+        memInfo mem = new memInfo();
+        mem.read();
 
-        public MySwingWorker(long totalMemoryMB) {
-            this.totalMemoryMB = totalMemoryMB;
-            fifo.add(0.0);
+        System.out.println("=== Memory Information ===");
+        System.out.println("Total Memory: " + mem.getTotal());
+        System.out.println("Used Memory : " + mem.getUsed());
+    }
+
+    public static void showDisk() {
+        diskInfo disk = new diskInfo();
+        disk.read();
+
+        System.out.println("=== Disk Information ===");
+        for (int i = 0; i < disk.diskCount(); i++) {
+            System.out.println("Disk: " + disk.getName(i));
+            System.out.println("  Total blocks: " + disk.getTotal(i));
+            System.out.println("  Used blocks : " + disk.getUsed(i));
+            System.out.println();
         }
+    }
 
-        @Override
-        protected Boolean doInBackground() throws Exception {
-            while (!isCancelled()) {
-                mem.read();
-                long usedMemoryBytes = mem.getUsed();
-                long usedMemoryMB = usedMemoryBytes / (1024 * 1024); // Convert bytes to MiB
+    public static void showPCI() {
+        pciInfo pci = new pciInfo();
+        pci.read();
 
-                // Calculate usage percentage
-                int usagePercent = (int) ((usedMemoryMB * 100) / totalMemoryMB);
+        System.out.println("=== PCI Devices ===");
 
-                fifo.add((double) usedMemoryMB);
-                if (fifo.size() > 500)
-                    fifo.removeFirst();
+        for (int i = 0; i < pci.busCount(); i++) {
+            for (int j = 0; j < 32; j++) {
+                for (int k = 0; k < 8; k++) {
+                    if (pci.functionPresent(i, j, k) > 0) {
+                        int vendorId = pci.vendorID(i, j, k);
+                        int productId = pci.productID(i, j, k);
 
-                double[] array = fifo.stream().mapToDouble(Double::doubleValue).toArray();
-                publish(array);
+                        String vendorName = Dictionary.getPCIVendorName(vendorId);
+                        String deviceName = Dictionary.getPCIDeviceName(vendorId, productId);
 
-                // Update chart title with current usage
-                updateChartTitle(usedMemoryMB, usagePercent);
+                        if (vendorName == null || vendorName.isEmpty())
+                            vendorName = "Unknown Vendor (0x" + String.format("%04X", vendorId) + ")";
+                        if (deviceName == null || deviceName.isEmpty())
+                            deviceName = "Unknown Device (0x" + String.format("%04X", productId) + ")";
 
-                Thread.sleep(1000);
+                        System.out.println(vendorName + " : " + deviceName);
+                    }
+                }
             }
-            return true;
         }
+    }
 
-        @Override
-        protected void process(List<double[]> chunks) {
-            double[] latest = chunks.get(chunks.size() - 1);
-            chart.updateXYSeries("memory_usage", null, latest, null);
-            sw.repaintChart();
-        }
+    public static void showUSB() {
+        usbInfo usb = new usbInfo();
+        usb.read();
 
-        private void updateChartTitle(long currentUsageMB, int usagePercent) {
-            chart.setTitle(
-                    "Memory Usage - " + currentUsageMB + " MiB / " + totalMemoryMB + " MiB (" + usagePercent + "%)");
+        System.out.println("=== USB Devices ===");
+
+        for (int i = 1; i <= usb.busCount(); i++) {
+            for (int j = 1; j <= usb.deviceCount(i); j++) {
+                int vendorId = usb.vendorID(i, j);
+                int productId = usb.productID(i, j);
+
+                if (vendorId == 0 && productId == 0)
+                    continue;
+
+                String vendorName = Dictionary.getUSBVendorName(vendorId);
+                String deviceName = Dictionary.getUSBDeviceName(vendorId, productId);
+
+                if (vendorName == null || vendorName.isEmpty())
+                    vendorName = "Unknown Vendor (0x" + String.format("%04X", vendorId) + ")";
+                if (deviceName == null || deviceName.isEmpty())
+                    deviceName = "Unknown Device (0x" + String.format("%04X", productId) + ")";
+
+                System.out.println(vendorName + " : " + deviceName);
+            }
         }
     }
 
     public static void main(String[] args) {
-        new MemMetric().start();
+        System.loadLibrary("sysinfo");
+        showMem();
+        try {
+            Dictionary.loadUSBDictionary("usb.ids");
+            System.out.println("USB dictionary loaded successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to load USB dictionary: " + e.getMessage());
+        }
+
+        try {
+            Dictionary.loadPCIDictionary("pci.ids");
+            System.out.println("PCI dictionary loaded successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to load PCI dictionary: " + e.getMessage());
+        }
+
+        SwingUtilities.invokeLater(() -> {
+            SysInfoDashboard dashboard = new SysInfoDashboard();
+
+            UsbMonitor monitor = new UsbMonitor(3000);
+            monitor.setNotificationListener(message -> {
+                System.out.println("USB Notification: " + message);
+                dashboard.showNotification(message, 3000);
+            });
+            monitor.start();
+
+            dashboard.addWindowListener(new java.awt.event.WindowAdapter() {
+                @Override
+                public void windowClosing(java.awt.event.WindowEvent e) {
+                    System.out.println("Closing USB monitor...");
+                    monitor.close();
+                }
+            });
+
+            dashboard.setVisible(true);
+            System.out.println("Dashboard started with USB monitoring");
+        });
     }
 }
