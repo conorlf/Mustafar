@@ -41,7 +41,12 @@ public class SysInfoDashboard extends JFrame {
         cardPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
         // Add subsystem cards
-        cardPanel.add(createCard("CPU", "View CPU information", () -> showOutputWindow("CPU Info", template::showCPU)));
+        cardPanel.add(createCard("CPU", "Show CPU Graph", () -> {
+            new Thread(() -> {
+                CpuMetric metric = new CpuMetric();
+                metric.start();
+            }).start();
+        }));
         cardPanel.add(createCard("PCI", "View PCI devices", () -> showOutputWindow("PCI Info", template::showPCI)));
         cardPanel.add(createCard("USB", "View USB devices", () -> showOutputWindow("USB Info", template::showUSB)));
         cardPanel.add(
