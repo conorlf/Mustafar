@@ -3,123 +3,117 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.TimerTask;
+import java.util.Timer;
+
+import org.knowm.xchart.XChartPanel;
 
 public class SysInfoDashboard extends JFrame {
 
     private final Color bgColor = new Color(25, 25, 25);
     private final Color panelColor = new Color(40, 40, 40);
     private final Color textColor = new Color(230, 230, 230);
-    private final JPanel notificationGlass;
-    private final JLabel notificationLabel;
-    private Timer notificationTimer;
+
+    private JTextArea pciArea;
+    private JTextArea usbArea;
 
     public SysInfoDashboard() {
         super("System Information Dashboard");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(900, 600);
+        setSize(1200, 700);
         setLocationRelativeTo(null);
 
-        JPanel mainPanel = new JPanel(new BorderLayout());
+        JPanel mainPanel = new JPanel(new GridLayout(2, 4, 15, 15));
+        mainPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
         mainPanel.setBackground(bgColor);
         setContentPane(mainPanel);
 
-        // Top title bar
-        JPanel topBar = new JPanel(new BorderLayout());
-        topBar.setBackground(panelColor);
-        topBar.setBorder(new EmptyBorder(10, 15, 10, 15));
-        JLabel title = new JLabel("System Information Dashboard");
-        title.setForeground(textColor);
-        title.setFont(new Font("Segoe UI", Font.BOLD, 22));
-        topBar.add(title, BorderLayout.WEST);
-        mainPanel.add(topBar, BorderLayout.NORTH);
+        // Box 1: CPU Specs
+        JPanel cpuSpecBox = createBox("CPU Specs", template::showCPU, false);
+        mainPanel.add(cpuSpecBox);
 
-        // Grid layout for cards
-        JPanel cardPanel = new JPanel(new GridLayout(2, 3, 20, 20));
-        cardPanel.setBackground(bgColor);
-        cardPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        // Box 2: CPU Graph
+        JPanel cpuGraphBox = createBox("CPU Usage Graph", () -> new CpuMetric().start(), false);
+        mainPanel.add(cpuGraphBox);
 
-        // CPU card
-        cardPanel.add(createCard("CPU", "Show CPU Graph", () -> {
-            new Thread(() -> new CpuMetric().start()).start();
-        }));
+        // Box 3: Memory Total
+        JPanel memSpecBox = createBox("Memory Total", template::showMem, false);
+        mainPanel.add(memSpecBox);
 
-        // PCI card
-        cardPanel.add(createCard("PCI", "View PCI devices", () -> showOutputWindow("PCI Info", template::showPCI)));
+        // Box 4: Memory Graph
+        JPanel memGraphBox = createBox("Memory Usage Graph", () -> new MemMetric().start(), false);
+        mainPanel.add(memGraphBox);
 
-        // USB card
-        cardPanel.add(createCard("USB", "View USB devices", () -> showOutputWindow("USB Info", template::showUSB)));
+        // Box 5: Disk Usage Summary
+        JPanel diskSummaryBox = createBox("Disk Usage (Used/Total)", this::showDiskSummary, false);
+        mainPanel.add(diskSummaryBox);
 
-        // Memory card
-        cardPanel.add(createCard("Memory", "Show Memory Graph", () -> {
-            new Thread(() -> new MemMetric().start()).start();
-        }));
+        // Box 6: Disk Full Details
+        JPanel diskDetailsBox = createBox("Disk Details", () -> showOutputWindow("Disk Info", template::showDisk),
+                false);
+        mainPanel.add(diskDetailsBox);
 
-        // Disk card: shows total/used on card and detailed info on click
-        memInfo mem = new memInfo();
-        mem.read();
-        diskInfo disk = new diskInfo();
-        disk.read();
+        // Box 7: PCI Devices (Live)
+        pciArea = new JTextArea();
+        JScrollPane pciScroll = new JScrollPane(pciArea);
+        pciArea.setFont(new Font("Monospaced", Font.BOLD, 12));
+        pciArea.setEditable(false);
+        JPanel pciBox = createBox("PCI Devices", pciScroll);
+        mainPanel.add(pciBox);
+        startPCIUpdate();
 
-        String diskSummary = "<html>Total Memory: " + mem.getTotal() +
-                " Used: " + mem.getUsed() + "<br>" +
-                "Disks: ";
-        for (int i = 0; i < disk.diskCount(); i++) {
-            diskSummary += disk.getUsed(i) + "/" + disk.getTotal(i) + " ";
-        }
-        diskSummary += "</html>";
-
-        cardPanel.add(createCard("Disk", diskSummary, () -> showOutputWindow("Disk Info", template::showDisk)));
-
-        mainPanel.add(cardPanel, BorderLayout.CENTER);
-
-        // Notification glass
-        notificationGlass = new JPanel(new GridBagLayout()) {
-            @Override
-            public boolean isOpaque() {
-                return false;
-            }
-        };
-        notificationLabel = new JLabel("", SwingConstants.CENTER);
-        notificationLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        notificationLabel.setForeground(Color.WHITE);
-        notificationLabel.setOpaque(true);
-        notificationLabel.setBackground(new Color(0, 122, 204, 220));
-        notificationLabel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        notificationGlass.add(notificationLabel, new GridBagConstraints());
-        notificationGlass.setVisible(false);
-        setGlassPane(notificationGlass);
+        // Box 8: USB Devices (Live)
+        usbArea = new JTextArea();
+        JScrollPane usbScroll = new JScrollPane(usbArea);
+        usbArea.setFont(new Font("Monospaced", Font.BOLD, 12));
+        usbArea.setEditable(false);
+        JPanel usbBox = createBox("USB Devices", usbScroll);
+        mainPanel.add(usbBox);
+        startUSBUpdate();
     }
 
-    private JPanel createCard(String title, String description, Runnable onClick) {
-        JPanel card = new JPanel();
-        card.setBackground(new Color(40, 40, 40));
-        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBorder(BorderFactory.createCompoundBorder(
+    private JPanel createBox(String title, Runnable onClick, boolean captureOutput) {
+        JPanel box = new JPanel();
+        box.setBackground(panelColor);
+        box.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(70, 70, 70)),
-                new EmptyBorder(20, 20, 20, 20)));
-        card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                new EmptyBorder(10, 10, 10, 10)));
+        box.setLayout(new BorderLayout());
 
-        JLabel titleLabel = new JLabel(title);
+        JLabel titleLabel = new JLabel(title, SwingConstants.CENTER);
         titleLabel.setForeground(textColor);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        box.add(titleLabel, BorderLayout.NORTH);
 
-        JLabel descLabel = new JLabel(description);
-        descLabel.setForeground(textColor.brighter());
-        descLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        descLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        descLabel.setBorder(new EmptyBorder(10, 0, 0, 0));
+        JButton button = new JButton("View");
+        box.add(button, BorderLayout.CENTER);
 
-        card.add(titleLabel);
-        card.add(descLabel);
-
-        card.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
+        button.addActionListener(e -> {
+            if (captureOutput) {
+                showOutputWindow(title, onClick);
+            } else {
                 onClick.run();
             }
         });
 
-        return card;
+        return box;
+    }
+
+    private JPanel createBox(String title, JComponent component) {
+        JPanel box = new JPanel();
+        box.setBackground(panelColor);
+        box.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(70, 70, 70)),
+                new EmptyBorder(10, 10, 10, 10)));
+        box.setLayout(new BorderLayout());
+
+        JLabel titleLabel = new JLabel(title, SwingConstants.CENTER);
+        titleLabel.setForeground(textColor);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        box.add(titleLabel, BorderLayout.NORTH);
+
+        box.add(component, BorderLayout.CENTER);
+        return box;
     }
 
     private void showOutputWindow(String title, Runnable templateMethod) {
@@ -135,40 +129,91 @@ public class SysInfoDashboard extends JFrame {
 
         try {
             templateMethod.run();
-        } catch (Exception e) {
-            e.printStackTrace(ps);
         } finally {
             System.out.flush();
             System.setOut(oldOut);
         }
 
-        String output = baos.toString();
-
-        JTextArea textArea = new JTextArea(output);
+        JTextArea textArea = new JTextArea(baos.toString());
         textArea.setFont(new Font("Monospaced", Font.PLAIN, 14));
-        textArea.setBackground(new Color(40, 40, 40));
-        textArea.setForeground(new Color(230, 230, 230));
+        textArea.setBackground(panelColor);
+        textArea.setForeground(textColor);
         textArea.setEditable(false);
-        textArea.setLineWrap(true);
-        textArea.setWrapStyleWord(true);
 
         JScrollPane scroll = new JScrollPane(textArea);
         dialog.add(scroll);
         dialog.setVisible(true);
     }
 
-    public void showNotification(String message, int durationMs) {
-        notificationLabel.setText(message);
-        notificationGlass.setVisible(true);
-        notificationGlass.revalidate();
-        notificationGlass.repaint();
+    private void showDiskSummary() {
+        diskInfo disk = new diskInfo();
+        disk.read();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < disk.diskCount(); i++) {
+            sb.append(String.format("%s : Used %d / Total %d\n",
+                    disk.getName(i),
+                    disk.getUsed(i),
+                    disk.getTotal(i)));
+        }
+        JOptionPane.showMessageDialog(this, sb.toString(), "Disk Usage", JOptionPane.INFORMATION_MESSAGE);
+    }
 
-        if (notificationTimer != null && notificationTimer.isRunning())
-            notificationTimer.stop();
+    private void startPCIUpdate() {
+        Timer timer = new Timer();
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                pciInfo pci = new pciInfo();
+                pci.read();
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < pci.busCount(); i++) {
+                    for (int j = 0; j < 32; j++) {
+                        for (int k = 0; k < 8; k++) {
+                            if (pci.functionPresent(i, j, k) > 0) {
+                                int vendorId = pci.vendorID(i, j, k);
+                                int productId = pci.productID(i, j, k);
+                                String vendor = Dictionary.getPCIVendorName(vendorId);
+                                String device = Dictionary.getPCIDeviceName(vendorId, productId);
+                                if (vendor == null || vendor.isEmpty())
+                                    vendor = String.format("Unknown Vendor (0x%04X)", vendorId);
+                                if (device == null || device.isEmpty())
+                                    device = String.format("Unknown Device (0x%04X)", productId);
+                                sb.append(String.format("%s : %s Bus : %d\n", vendor, device, i));
+                            }
+                        }
+                    }
+                }
+                SwingUtilities.invokeLater(() -> pciArea.setText(sb.toString()));
+            }
+        }, 0, 3000);
+    }
 
-        notificationTimer = new Timer(durationMs, e -> notificationGlass.setVisible(false));
-        notificationTimer.setRepeats(false);
-        notificationTimer.start();
+    private void startUSBUpdate() {
+        Timer timer = new Timer();
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                usbInfo usb = new usbInfo();
+                usb.read();
+                StringBuilder sb = new StringBuilder();
+                for (int i = 1; i <= usb.busCount(); i++) {
+                    for (int j = 1; j <= usb.deviceCount(i); j++) {
+                        int vendorId = usb.vendorID(i, j);
+                        int productId = usb.productID(i, j);
+                        if (vendorId == 0 && productId == 0)
+                            continue;
+                        String vendor = Dictionary.getUSBVendorName(vendorId);
+                        String device = Dictionary.getUSBDeviceName(vendorId, productId);
+                        if (vendor == null || vendor.isEmpty())
+                            vendor = String.format("Unknown Vendor (0x%04X)", vendorId);
+                        if (device == null || device.isEmpty())
+                            device = String.format("Unknown Device (0x%04X)", productId);
+                        sb.append(String.format("%s : %s Bus : %d\n", vendor, device, i));
+                    }
+                }
+                SwingUtilities.invokeLater(() -> usbArea.setText(sb.toString()));
+            }
+        }, 0, 3000);
     }
 
     public static void main(String[] args) {
