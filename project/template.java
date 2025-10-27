@@ -1,11 +1,12 @@
+
 /*
  *  Example class containing methods to read and display CPU, PCI and USB information
  *
  *  Copyright (c) 2024 Mark Burkley (mark.burkley@ul.ie)
  */
+import java.util.Scanner;
 
 import javax.swing.*;
-
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import java.awt.*;
@@ -111,20 +112,52 @@ public class template {
         cpuInfo cpu = new cpuInfo();
         cpu.read(0);
 
-        showCPU();
-        showPCI();
-        showUSB();
-        showDisk();
-        showMem();
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception ignored) {
+        Scanner scanner = new Scanner(System.in);
+        int option = 0; // just to get the loop started
+        System.out.println("====System Information====\nChoose an option:");
+        System.out.println("\n1. Show CPU information");
+        System.out.println("\n2. Show memory information");
+        System.out.println("\n3. Show disk information");
+        System.out.println("\n4. Show PCI information");
+        System.out.println("\n4. Show USB information");
+        System.out.println("\n5. Exit");
+
+        while (option != 6) {
+            System.out.print("\nOption (1-6): ");
+
+            try {
+                option = Integer.parseInt(scanner.nextLine());
+
+                if (option < 1 || option > 6) {
+                    System.out.println("Invalid option. Please enter a number between 1 and 6.");
+                    continue;
+                }
+
+                switch (option) {
+                    case 1:
+                        showCPU();
+                        break;
+                    case 2:
+                        showMem();
+                        break;
+                    case 3:
+                        showDisk();
+                        break;
+                    case 4:
+                        showPCI();
+                        break;
+                    case 5:
+                        showUSB();
+                        break;
+                    case 6:
+                        System.out.println("Thank you for using our system information software!");
+                        break;
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid input. Please enter a valid number between 1 and 6.");
+            }
         }
 
-        SwingUtilities.invokeLater(() -> {
-            FrontEnd ui = new FrontEnd();
-            ui.setVisible(true);
-            ui.showMessageWindow(cpu.getModel());
-        });
+        scanner.close();
     }
 }
