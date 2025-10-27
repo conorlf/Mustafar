@@ -12,6 +12,7 @@
 #include <sstream>
 #include <string>
 #include <array>
+#inlude <fstream>
 #include <unistd.h>
 
 #include "cpuInfo.h"
@@ -82,6 +83,7 @@ int CPUInfo::_stoi (string& s, int idefault)
 
 double CPUInfo::_clockSpeed()
 {
+    std::unique_ptr<FILE, decltype(&fclose)> stat(fopen("/proc/stat", "r"), fclose);
     std::ifstream cpuinfo("/proc/cpuinfo");
     std::string line;
     while (std::getline(cpuinfo, line)) {

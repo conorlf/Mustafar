@@ -4,6 +4,13 @@
  *  Copyright (c) 2024 Mark Burkley (mark.burkley@ul.ie)
  */
 
+import javax.swing.*;
+
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import java.awt.*;
+import javax.swing.border.EmptyBorder;
+
 public class template {
     public static void showPCI() {
         pciInfo pci = new pciInfo();
@@ -109,5 +116,15 @@ public class template {
         showUSB();
         showDisk();
         showMem();
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception ignored) {
+        }
+
+        SwingUtilities.invokeLater(() -> {
+            FrontEnd ui = new FrontEnd();
+            ui.setVisible(true);
+            ui.showMessageWindow(cpu.getModel());
+        });
     }
 }
