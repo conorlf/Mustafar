@@ -89,11 +89,11 @@ JNIEXPORT void JNICALL Java_memInfo_read (JNIEnv *env, jobject obj) {
     memInfo.read();
 }
 
-JNIEXPORT jint JNICALL Java_memInfo_getTotal (JNIEnv *env, jobject obj) {
+JNIEXPORT jlong JNICALL Java_memInfo_getTotal (JNIEnv *env, jobject obj) {
     return memInfo.total ();
 }
 
-JNIEXPORT jint JNICALL Java_memInfo_getUsed (JNIEnv *env, jobject obj) {
+JNIEXPORT jlong JNICALL Java_memInfo_getUsed (JNIEnv *env, jobject obj) {
     return memInfo.used ();
 }
 
