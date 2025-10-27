@@ -86,12 +86,18 @@ public class CpuMetric {
         // Start stress command in a separate thread
         new Thread(() -> {
             try {
-                System.out.println("Starting CPU stress test...");
+                System.out.println("Starting aggressive CPU stress test...");
 
-                // Use stress command to generate CPU load
-                // -c 2: Use 2 CPU workers
-                // -t 15: Run for 15 seconds
-                ProcessBuilder pb = new ProcessBuilder("stress", "--cpu", "2", "--timeout", "15");
+                // Method 1: Use more CPU workers (number of CPU cores)
+                int cpuCores = Runtime.getRuntime().availableProcessors();
+                ProcessBuilder pb = new ProcessBuilder("stress", "--cpu", String.valueOf(cpuCores), "--timeout", "15");
+
+                // Method 2: Alternative - use CPU with 100% load per worker
+                // ProcessBuilder pb = new ProcessBuilder("stress", "--cpu",
+                // String.valueOf(cpuCores), "--cpu-load", "100", "--timeout", "15");
+
+                System.out.println("Using " + cpuCores + " CPU cores for stress test");
+
                 Process process = pb.start();
 
                 // Wait for the stress command to complete
@@ -105,24 +111,62 @@ public class CpuMetric {
 
             } catch (Exception ex) {
                 System.err.println("Error running stress command: " + ex.getMessage());
-                ex.printStackTrace();
-                SwingUtilities.invokeLater(() -> {
-                    stopStressTest();
-                    JOptionPane.showMessageDialog(frame,
-                            "Error: Could not run stress command.\nMake sure 'stress' is installed:\nsudo apt-get install stress",
-                            "Error",
-                            JOptionPane.ERROR_MESSAGE);
-                });
+
+                // Fallback to alternative method
+                tryFallbackStressTest();
             }
         }).start();
 
-        // Set a timer to automatically reset the button after 16 seconds (safety
-        // margin)
+        // Set a timer to automatically reset the button after 16 seconds
         stressTimer = new Timer(16000, e -> {
             stopStressTest();
         });
         stressTimer.setRepeats(false);
         stressTimer.start();
+    }
+
+    private void tryFallbackStressTest() {
+        try {
+            System.out.println("Trying fallback stress method...");
+
+            // Fallback method: Use dd and mathematical operations
+            String[] commands = {
+                    "bash", "-c",
+                    "for i in {1.." + Runtime.getRuntime().availableProcessors() + "}; do " +
+                            "while true; do " +
+                            "  echo 'scale=10000; 4*a(1)' | bc -l > /dev/null; " +
+                            "done & " +
+                            "done; " +
+                            "sleep 15; " +
+                            "pkill -f bc"
+            };
+
+            ProcessBuilder pb = new ProcessBuilder(commands);
+            Process process = pb.start();
+
+            new Thread(() -> {
+                try {
+                    int exitCode = process.waitFor();
+                    System.out.println("Fallback stress test completed with exit code: " + exitCode);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }).start();
+
+        } catch (Exception ex) {
+            System.err.println("Fallback stress also failed: " + ex.getMessage());
+            ex.printStackTrace();
+
+            SwingUtilities.invokeLater(() -> {
+                stopStressTest();
+                JOptionPane.showMessageDialog(frame,
+                        "All stress methods failed.\n" +
+                                "Try installing stress: sudo apt-get install stress\n" +
+                                "Or install bc: sudo apt-get install bc",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            });
+        }
     }
 
     private void stopStressTest() {
