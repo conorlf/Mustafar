@@ -15,6 +15,7 @@ public class CpuMetric {
     private MySwingWorker mySwingWorker;
     private SwingWrapper<XYChart> sw;
     private XYChart chart;
+    cpuInfo cpu = new cpuInfo();
 
     public void start() {
         // Create Chart
@@ -47,13 +48,13 @@ public class CpuMetric {
         @Override
         protected Boolean doInBackground() throws Exception {
             while (!isCancelled()) {
-                fifo.add(fifo.getLast() + Math.random() - 0.5);
+                fifo.add((double) cpu.getIdleTime(1));
                 if (fifo.size() > 500)
                     fifo.removeFirst();
 
                 double[] array = fifo.stream().mapToDouble(Double::doubleValue).toArray();
                 publish(array);
-                Thread.sleep(50);
+                Thread.sleep(1000);
             }
             return true;
         }

@@ -1,2 +1,8 @@
+
 #!/bin/bash
-java -Djava.library.path=libsysinfo template 
+java -cp ".:lib/*" -Djava.library.path=libsysinfo template
+
+
+
+
+
