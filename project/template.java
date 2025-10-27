@@ -101,7 +101,7 @@ public class template {
 
     public static void main(String[] args) {
         System.loadLibrary("sysinfo");
-
+        showMem();
         try {
             Dictionary.loadUSBDictionary("usb.ids");
             System.out.println("USB dictionary loaded successfully");

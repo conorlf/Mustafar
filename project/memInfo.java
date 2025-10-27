@@ -1,14 +1,18 @@
-/*
- *  Memory information class for JNI
- *
- *  Copyright (c) 2024 Mark Burkley (mark.burkley@ul.ie)
- */
-
 public class memInfo {
-    // Refresh the current values and counters - call this before other methods
+    // Native method declarations
     public native void read();
 
-    public native int getTotal();
+    public native long getTotal();
 
-    public native int getUsed();
+    public native long getUsed();
+
+    // Static initializer to load the native library
+    static {
+        try {
+            System.loadLibrary("sysinfo");
+            System.out.println("memInfo: Native library loaded successfully");
+        } catch (UnsatisfiedLinkError e) {
+            System.err.println("memInfo: Failed to load native library: " + e.getMessage());
+        }
+    }
 }
