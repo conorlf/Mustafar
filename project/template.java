@@ -119,13 +119,19 @@ public class template {
         SwingUtilities.invokeLater(() -> {
             SysInfoDashboard dashboard = new SysInfoDashboard();
 
-            try (// USB monitor (Step 5)
-                    UsbMonitor monitor = new UsbMonitor(1000)) {
-                monitor.setNotificationListener(notification -> dashboard.showNotification(notification, 0));
-                monitor.start();
-            }
+            UsbMonitor monitor = new UsbMonitor(1000);
+            monitor.setNotificationListener(notification -> dashboard.showNotification(notification, 0));
+            monitor.start();
+
+            // stop the monitor when the window closes
+            dashboard.addWindowListener(new java.awt.event.WindowAdapter() {
+                @Override
+                public void windowClosing(java.awt.event.WindowEvent e) {
+                    monitor.close();
+                }
+            });
+
             dashboard.setVisible(true);
         });
     }
-
 }
