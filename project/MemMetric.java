@@ -1,99 +1,88 @@
 import java.util.LinkedList;
 import java.util.List;
-import javax.swing.*;
+import javax.swing.SwingWorker;
 import org.knowm.xchart.QuickChart;
-import org.knowm.xchart.XChartPanel;
+import org.knowm.xchart.SwingWrapper;
 import org.knowm.xchart.XYChart;
 
 public class MemMetric {
-    private MySwingWorker mySwingWorker;
-    private JFrame frame;
-    private XYChart chart;
-    private memInfo mem = new memInfo();
+
+    MySwingWorker mySwingWorker;
+    SwingWrapper<XYChart> sw;
+    XYChart chart;
+    memInfo mem = new memInfo();
 
     public void start() {
-        // Initialize memory info to get total memory
-        mem.read();
-        long totalMemoryKB = mem.getTotal();
-
-        chart = QuickChart.getChart(
-                "Memory Usage",
-                "Time",
-                "Memory Usage (%)",
-                "memory_usage",
-                new double[] { 0 },
-                new double[] { 0 });
+        // Create Chart
+        chart = QuickChart.getChart("Memory Usage", "Time", "Memory Usage (%)", "memoryUsage",
+                new double[] { 0 }, new double[] { 0 });
         chart.getStyler().setLegendVisible(false);
         chart.getStyler().setXAxisTicksVisible(false);
         chart.getStyler().setYAxisMin(0.0);
-        chart.getStyler().setYAxisMax(100.0); // Set Y-axis to 0-100%
+        chart.getStyler().setYAxisMax(100.0);
 
-        // Create the frame
-        frame = new JFrame("Memory Monitor");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setLayout(new BorderLayout());
+        // Show it
+        sw = new SwingWrapper<XYChart>(chart);
+        sw.displayChart();
 
-        // Create chart panel
-        XChartPanel<XYChart> chartPanel = new XChartPanel<>(chart);
-        frame.add(chartPanel, BorderLayout.CENTER);
-
-        // Show frame
-        frame.pack();
-        frame.setSize(800, 600);
-        frame.setLocationRelativeTo(null);
-        frame.setVisible(true);
-
-        // Start updating
-        mySwingWorker = new MySwingWorker(totalMemoryKB);
+        mySwingWorker = new MySwingWorker();
         mySwingWorker.execute();
     }
 
     private class MySwingWorker extends SwingWorker<Boolean, double[]> {
-        LinkedList<Double> fifo = new LinkedList<>();
-        private final long totalMemoryKB;
 
-        public MySwingWorker(long totalMemoryKB) {
-            this.totalMemoryKB = totalMemoryKB;
+        LinkedList<Double> fifo = new LinkedList<Double>();
+        long totalMemoryKB;
+
+        public MySwingWorker() {
+            // Initialize memory and get total memory once
+            mem.read();
+            totalMemoryKB = mem.getTotal();
             fifo.add(0.0);
         }
 
         @Override
         protected Boolean doInBackground() throws Exception {
             while (!isCancelled()) {
+                // Read current memory usage
                 mem.read();
                 long usedMemoryKB = mem.getUsed();
 
-                // Calculate usage percentage (0-100%)
-                double usagePercent = (usedMemoryKB * 100.0) / totalMemoryKB;
+                // Calculate memory usage percentage
+                double memoryUsagePercent = (usedMemoryKB * 100.0) / totalMemoryKB;
 
-                System.out.println("Memory: " + usedMemoryKB + " KB / " + totalMemoryKB + " KB = "
-                        + String.format("%.1f", usagePercent) + "%");
-
-                fifo.add(usagePercent);
-                if (fifo.size() > 500)
+                fifo.add(memoryUsagePercent);
+                if (fifo.size() > 500) {
                     fifo.removeFirst();
+                }
 
-                double[] array = fifo.stream().mapToDouble(Double::doubleValue).toArray();
+                double[] array = new double[fifo.size()];
+                for (int i = 0; i < fifo.size(); i++) {
+                    array[i] = fifo.get(i);
+                }
                 publish(array);
 
-                updateChartTitle(usedMemoryKB, usagePercent);
-
-                Thread.sleep(1000);
+                try {
+                    Thread.sleep(1000); // 1Hz refresh
+                } catch (InterruptedException e) {
+                    System.out.println("MySwingWorker shut down.");
+                }
             }
             return true;
         }
 
         @Override
         protected void process(List<double[]> chunks) {
-            double[] latest = chunks.get(chunks.size() - 1);
-            chart.updateXYSeries("memory_usage", null, latest, null);
-            frame.repaint();
-        }
+            double[] mostRecentDataSet = chunks.get(chunks.size() - 1);
 
-        private void updateChartTitle(long currentUsageKB, double usagePercent) {
-            long currentUsageMB = currentUsageKB / 1024;
+            chart.updateXYSeries("memoryUsage", null, mostRecentDataSet, null);
+            sw.repaintChart();
+
+            // Update title with current memory usage
+            double currentUsage = mostRecentDataSet[mostRecentDataSet.length - 1];
+            long currentUsageMB = (long) ((currentUsage * totalMemoryKB) / (100.0 * 1024));
             long totalMemoryMB = totalMemoryKB / 1024;
-            chart.setTitle("Memory Usage - " + String.format("%.1f", usagePercent) + "% (" +
+            chart.setTitle("Memory Usage - " + String.format("%.1f", currentUsage) + "% (" +
                     currentUsageMB + " MiB / " + totalMemoryMB + " MiB)");
         }
     }
