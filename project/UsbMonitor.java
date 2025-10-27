@@ -42,6 +42,7 @@ public final class UsbMonitor implements AutoCloseable {
     }
 
     public List<usbDevice> scanOnce() {
+        System.out.println("[USB Monitor] Scanning for USB device changes...");
         usbInfo usb = new usbInfo();
         usb.read();
 
