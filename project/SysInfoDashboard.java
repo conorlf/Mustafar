@@ -8,7 +8,7 @@ public class SysInfoDashboard extends JFrame {
 
     private final Color bgColor = new Color(25, 25, 25);
     private final Color panelColor = new Color(40, 40, 40);
-    private final Color accentColor = new Color(0, 122, 204);
+    // private final Color accentColor = new Color(0, 122, 204);
     private final Color textColor = new Color(230, 230, 230);
 
     public SysInfoDashboard() {
