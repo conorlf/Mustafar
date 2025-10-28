@@ -23,14 +23,7 @@ public class UsbDevice{
       return Integer.toString(vendorID) +":"+Integer.toString(productID); //string concatenation
    }  
     public void displayUsbInfo() {
-    System.out.println(
-        "Bus " + bus +
-        " device " + device +
-        " has vendor " + String.format("0x%04X", vendorID) +
-        " and product " + String.format("0x%04X", productID) +
-        " and vendor name " + vendorName +
-        " and device name " + deviceName
-    );
+    System.out.printf("%-8d %-8d 0x%04X      0x%04X      %-30s %-30s%n",bus,device,vendorID,productID,vendorName,deviceName);
 } 
 }
   /* 

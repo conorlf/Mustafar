@@ -108,6 +108,48 @@ public class template
 
 
     }
+    
+    // Helper methods to return formatted strings for cards
+    public static String getCPUInfo() {
+        if (computer.cpu == null) return "CPU not loaded";
+        return String.format("Model: %s\nCores: %d", computer.cpu.model, computer.cpu.cores.size());
+    }
+    
+    public static String getMemoryInfo() {
+        if (computer.memory == null) return "Memory not loaded";
+        return String.format("Total: %d KB\nUsed: %d KB\nUsage: %.1f%%",
+            computer.memory.totalMemory, computer.memory.usedMemory, computer.memory.usagePercent);
+    }
+    
+    public static String getDiskInfo() {
+        StringBuilder sb = new StringBuilder();
+        for (var d : computer.disks) {
+            sb.append(d.name).append("\n");
+        }
+        return sb.toString().trim();
+    }
+    
+    public static String getPCIInfo() {
+        if (pciDevices.isEmpty()) return "No PCI devices";
+        StringBuilder sb = new StringBuilder();
+        for (PciDevice device : pciDevices) {
+            sb.append(String.format("%-8d %-8d %-8d 0x%04X  0x%04X  %-30s %-30s%n",
+                device.bus, device.device, device.function, device.vendorID, device.productID,
+                device.vendorName, device.deviceName));
+        }
+        return sb.toString();
+    }
+    
+    public static String getUSBInfo() {
+        if (usbDevices.isEmpty()) return "No USB devices";
+        StringBuilder sb = new StringBuilder();
+        for (UsbDevice device : usbDevices) {
+            sb.append(String.format("%-8d %-8d 0x%04X  0x%04X  %-30s %-30s%n",
+                device.bus, device.device, device.vendorID, device.productID, 
+                device.vendorName, device.deviceName));
+        }
+        return sb.toString();
+    }
 
     // disks are one based
     public static void loadDiskInfo() {

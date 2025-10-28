@@ -16,50 +16,13 @@ import systeminfo.CpuCore;
 import systeminfo.CpuTimings;
 import systeminfo.Disk;
 import systeminfo.DiskBlocks;
+import SysInfoDashboard;
 
 public class Gui {
 
     public static JPanel createSystemInfoTab(Computer computer) {
-        JTextArea infoArea = new JTextArea(15, 50);
-        infoArea.setEditable(false);
-        infoArea.setFont(new java.awt.Font("Monospaced", java.awt.Font.PLAIN, 12));
-
-        JScrollPane scrollPane = new JScrollPane(infoArea);
-        JPanel panel = new JPanel(new java.awt.BorderLayout());
-        panel.add(scrollPane, java.awt.BorderLayout.CENTER);
-
-        // Timer to refresh every 5 seconds
-        new javax.swing.Timer(5000, e -> {
-            StringBuilder sb = new StringBuilder();
-            sb.append("=== SYSTEM INFORMATION ===\n\n");
-
-            // CPU Info
-            sb.append("CPU Model: ").append(computer.cpu.model).append("\n");
-            sb.append("Cores: ").append(computer.cpu.cores.size()).append("\n\n");
-
-            // Memory Info
-            sb.append("=== MEMORY ===\n");
-            sb.append(String.format("Total: %d KB\nUsed: %d KB\nUsage: %.2f%%\n\n",
-                computer.memory.totalMemory,
-                computer.memory.usedMemory,
-                computer.memory.usagePercent));
-
-            // Disk Info
-            sb.append("=== DISKS ===\n");
-            for (var d : computer.disks) {
-                sb.append(String.format("%s\n",
-                    d.name));
-                    //d.usedBlockCount,
-                    //d.blockCount,
-                    //(double) d.usedBlockCount / d.blockCount * 100));
-            }
-            sb.append("\n");
-
-            infoArea.setText(sb.toString());
-            infoArea.setCaretPosition(0); // Scroll to top
-        }).start();
-
-        return panel;
+        // Replace old text area with card-based dashboard
+        return new SysInfoDashboard();
     }
 
     public static void showChart(Computer computer, SystemInfoWorker worker) {
