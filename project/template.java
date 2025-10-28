@@ -159,14 +159,14 @@ public class template
     {
         System.loadLibrary("sysinfo");
       //  System.loadLibrary("sysinfo");
-      String usbPath = "//home//vboxuser//Mustafar//project//usb.ids";
+      String usbPath = "usb.ids";
       System.out.println("Loading USB dictionary...");
       long var3 = System.currentTimeMillis();
       Dictionary.loadUSBDictionary(usbPath);
       long var5 = System.currentTimeMillis();
       var5 -= var3;
       System.out.println("Dictionary loaded. " + var5);
-      String pciPath = "//home//vboxuser//Mustafar//project//pci.ids";
+      String pciPath = "pci.ids";
       System.out.println("Loading PCI dictionary...");
       var3 = System.currentTimeMillis();
       Dictionary.loadPCIDictionary(pciPath);
