@@ -19,6 +19,61 @@ import systeminfo.DiskBlocks;
 
 public class Gui {
 
+    public static JPanel createSystemInfoTab(Computer computer) {
+        JTextArea infoArea = new JTextArea(15, 50);
+        infoArea.setEditable(false);
+        infoArea.setFont(new java.awt.Font("Monospaced", java.awt.Font.PLAIN, 12));
+
+        JScrollPane scrollPane = new JScrollPane(infoArea);
+        JPanel panel = new JPanel(new java.awt.BorderLayout());
+        panel.add(scrollPane, java.awt.BorderLayout.CENTER);
+
+        // Timer to refresh every 5 seconds
+        new javax.swing.Timer(5000, e -> {
+            StringBuilder sb = new StringBuilder();
+            sb.append("=== SYSTEM INFORMATION ===\n\n");
+
+            // CPU Info
+            sb.append("CPU Model: ").append(computer.cpu.model).append("\n");
+            sb.append("Cores: ").append(computer.cpu.cores.size()).append("\n\n");
+
+            // Memory Info
+            sb.append("=== MEMORY ===\n");
+            sb.append(String.format("Total: %d KB\nUsed: %d KB\nUsage: %.2f%%\n\n",
+                computer.memory.totalMemory,
+                computer.memory.usedMemory,
+                computer.memory.usagePercent));
+
+            // Disk Info
+            sb.append("=== DISKS ===\n");
+            for (var d : computer.disks) {
+                sb.append(String.format("%s\n",
+                    d.name));
+                    //d.usedBlockCount,
+                    //d.blockCount,
+                    //(double) d.usedBlockCount / d.blockCount * 100));
+            }
+            sb.append("\n");
+
+            // PCI Info
+            sb.append("=== PCI DEVICES ===\n");
+            for (var bus : computer.pciBuses) {
+                for (var device : bus.pciDevices) {
+                    for (var function : device.pciFunctions) {
+                        sb.append(String.format("Bus %d, Device %d, Function %d, Vendor: %s, Product: %s\n",
+                            bus.busIndex, device.deviceIndex, function.functionIndex,
+                            function.vendorId, function.productId));
+                    }
+                }
+            }
+
+            infoArea.setText(sb.toString());
+            infoArea.setCaretPosition(0); // Scroll to top
+        }).start();
+
+        return panel;
+    }
+
     public static void showChart(Computer computer, SystemInfoWorker worker) {
 
         TimeSeriesCollection datasetCpu = new TimeSeriesCollection();
@@ -49,9 +104,10 @@ public class Gui {
 
 
         JTabbedPane tabs = new JTabbedPane();
-        tabs.addTab("CPU", new ChartPanel(cpuChart));
-        tabs.addTab("Memory", new ChartPanel(memChart));
-        tabs.addTab("Disk", new ChartPanel(diskChart));
+        tabs.addTab("CPU Graph", new ChartPanel(cpuChart));
+        tabs.addTab("Memory Graph", new ChartPanel(memChart));
+        tabs.addTab("Disk Graph", new ChartPanel(diskChart));
+        tabs.addTab("System Information", createSystemInfoTab(computer));
         JFrame frame = new JFrame();
         frame.add(tabs);
 
@@ -86,7 +142,7 @@ public class Gui {
         NumberAxis diskRange = (NumberAxis) diskPlot.getRangeAxis();
         diskRange.setRange(0.0, 100.0);
         DateAxis diskDomain = (DateAxis) diskPlot.getDomainAxis();
-        cpuDomain.setFixedAutoRange(60000);
+        diskDomain.setFixedAutoRange(60000);
         XYLineAndShapeRenderer diskRenderer = (XYLineAndShapeRenderer) diskPlot.getRenderer();
         diskRenderer.setDefaultShapesVisible(false);
 
