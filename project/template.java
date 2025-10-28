@@ -27,9 +27,11 @@ public class template
         Cpu myCpu = new Cpu(cpu.getModel(), cpu.socketCount(), cpu.coresPerSocket(), cpu.l1dCacheSize(), cpu.l1iCacheSize(), cpu.l2CacheSize(), cpu.l3CacheSize());
         
         // assuming all sockets are identical
-        for (int j = 0; j < myCpu.coresPerSocket; j++){
-            CpuCore core = new CpuCore(j);
-            myCpu.cores.add(core);
+        for (int i = 0; i < myCpu.socketCount; i++){
+            for (int j = 0; j < myCpu.coresPerSocket; j++){
+                CpuCore core = new CpuCore(j);
+                myCpu.cores.add(core);
+            }
         }
         computer.cpu = myCpu;
     }
