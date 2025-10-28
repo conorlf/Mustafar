@@ -6,7 +6,9 @@
 
 import systeminfo.*;
 import java.util.List;
+import java.util.Scanner;
 import java.util.ArrayList;
+import java.util.Dictionary;
 
 public class template 
 {
@@ -121,7 +123,26 @@ public class template
     public static void main(String[] args)
     {
         System.loadLibrary("sysinfo");
-
+      /*  System.loadLibrary("sysinfo");
+      Scanner var1 = new Scanner(System.in);
+      String var2 = "//home//project//JavaInstall//Mustafar//project//usb.ids";
+      System.out.println("Loading USB dictionary...");
+      long var3 = System.currentTimeMillis();
+      Dictionary.loadUSBDictionary(var2);
+      long var5 = System.currentTimeMillis();
+      var5 -= var3;
+      System.out.println("Dictionary loaded. " + var5);
+      String var7 = "//home//project//JavaInstall//Mustafar//project//pci.ids";
+      System.out.println("Loading PCI dictionary...");
+      var3 = System.currentTimeMillis();
+      Dictionary.loadPCIDictionary(var7);
+      var5 = System.currentTimeMillis();
+      var5 -= var3;
+      System.out.println("Dictionary loaded. " + var5);
+      new sysInfo();
+      cpuInfo var9 = new cpuInfo();
+      var9.read(0);
+        UsbMonitor var10 = new UsbMonitor(1000L);*/
         // load static hardware info once
         loadCpuInfo();
         loadPciInfo();
