@@ -55,18 +55,6 @@ public class Gui {
             }
             sb.append("\n");
 
-            // PCI Info
-            sb.append("=== PCI DEVICES ===\n");
-            for (var bus : computer.pciBuses) {
-                for (var device : bus.pciDevices) {
-                    for (var function : device.pciFunctions) {
-                        sb.append(String.format("Bus %d, Device %d, Function %d, Vendor: %s, Product: %s\n",
-                            bus.busIndex, device.deviceIndex, function.functionIndex,
-                            function.vendorId, function.productId));
-                    }
-                }
-            }
-
             infoArea.setText(sb.toString());
             infoArea.setCaretPosition(0); // Scroll to top
         }).start();

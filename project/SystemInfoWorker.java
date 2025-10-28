@@ -1,4 +1,4 @@
-import systeminfo.Computer;
+import systeminfo.*;
 
 
 public class SystemInfoWorker extends Thread {
@@ -12,6 +12,10 @@ public class SystemInfoWorker extends Thread {
             template.sampleCpuUsage();
             template.refreshMemoryInfo();
             template.refreshDiskUsage();
+            template.refreshUsbInfo();
+            
+            
+
 
         }
     }

@@ -5,18 +5,18 @@ import java.util.ArrayList;
 
 public class Computer{
     public Cpu cpu;
-    public List<PciBus> pciBuses;
-    public List<UsbBus> usbBuses;
+    //public List<PciBus> pciBuses;
+    //punlic List<UsbBus> usbBuses;
     public List<Disk> disks;
     public Memory memory;
 
     public Computer() {
-        this.pciBuses = new ArrayList<>();
-        this.usbBuses = new ArrayList<>();
+        //this.pciBuses = new ArrayList<>();
+      //  this.usbBuses = new ArrayList<>();
         this.disks = new ArrayList<>();
     }
 
-    public void dumpToConsole() {
+    /*public void dumpToConsole() {
 
         System.out.println("\n=== CPU INFO ===");
         System.out.println("Model: " + this.cpu.model);
@@ -64,5 +64,5 @@ public class Computer{
                 }
             }
         }
-    }
+    }*/
 }
