@@ -1,22 +1,19 @@
 .PHONY: libsysinfo/libsysinfo.so
 
-# List of JNI-enabled Java modules that need header generation.
-MODULES=sysInfo cpuInfo pciInfo usbInfo diskInfo memInfo
-HEADERS=$(MODULES:=.h)
+MODULES = sysInfo cpuInfo pciInfo usbInfo diskInfo memInfo
+HEADERS = $(MODULES:=.h)
 
-# JFreeChart and JCommon (installed via apt)
-JFC_PATH=/usr/share/java
-JFC_JAR=$(JFC_PATH)/jfreechart.jar:$(JFC_PATH)/jcommon.jar
+JAR_DIR := lib
+JFC_JAR := $(JAR_DIR)/jfreechart-1.5.4.jar:$(JAR_DIR)/jcommon-1.0.24.jar
 
-# Java source files (include systeminfo folder)
-JAVA_SOURCES=$(wildcard *.java) $(wildcard systeminfo/*.java)
+JAVA_SOURCES := $(wildcard *.java) $(wildcard systeminfo/*.java)
 
-# Main project entry (template.java)
-MYPROJECT=template
+MYPROJECT := template
 
 all: $(HEADERS) libsysinfo/libsysinfo.so compile_java
 
 compile_java:
+	@echo "Compiling Java sources with JFreeChart 1.5.4..."
 	javac -cp $(JFC_JAR) $(JAVA_SOURCES)
 
 $(HEADERS): %.h: %.java
@@ -24,3 +21,4 @@ $(HEADERS): %.h: %.java
 
 libsysinfo/libsysinfo.so:
 	$(MAKE) -C libsysinfo
+
