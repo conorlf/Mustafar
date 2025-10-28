@@ -16,7 +16,7 @@ import systeminfo.CpuCore;
 import systeminfo.CpuTimings;
 import systeminfo.Disk;
 import systeminfo.DiskBlocks;
-import SysInfoDashboard;
+
 
 public class Gui {
 
@@ -55,10 +55,11 @@ public class Gui {
 
 
         JTabbedPane tabs = new JTabbedPane();
+        tabs.addTab("System Information", createSystemInfoTab(computer));
         tabs.addTab("CPU Graph", new ChartPanel(cpuChart));
         tabs.addTab("Memory Graph", new ChartPanel(memChart));
         tabs.addTab("Disk Graph", new ChartPanel(diskChart));
-        tabs.addTab("System Information", createSystemInfoTab(computer));
+        
         JFrame frame = new JFrame();
         frame.add(tabs);
 

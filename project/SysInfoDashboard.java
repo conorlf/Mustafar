@@ -1,16 +1,12 @@
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import template;
 
 public class SysInfoDashboard extends JPanel {
 
-    private final JPanel notificationGlass;
-    private final JLabel notificationLabel;
-    private Timer notificationTimer;
-
     public SysInfoDashboard() {
-        super(new OverlayLayout(this));
+        // Use BorderLayout for main panel
+        setLayout(new BorderLayout());
 
         // Main panel for cards
         JPanel mainPanel = new JPanel(new BorderLayout());
@@ -24,37 +20,36 @@ public class SysInfoDashboard extends JPanel {
         topBar.add(title, BorderLayout.WEST);
         mainPanel.add(topBar, BorderLayout.NORTH);
 
-        // Cards panel
-        JPanel cardPanel = new JPanel(new GridLayout(2, 3, 20, 20));
-        cardPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
-
-        // Add cards
-        cardPanel.add(createCard("CPU", template.getCPUInfo()));
-        cardPanel.add(createCard("Memory", template.getMemoryInfo()));
-        cardPanel.add(createCard("Disk", template.getDiskInfo()));
-        cardPanel.add(createCard("PCI", template.getPCIInfo()));
-        cardPanel.add(createCard("USB", template.getUSBInfo()));
-        // 6th cell left empty
+        // Cards panel - nested layout for different row widths
+        JPanel cardPanel = new JPanel();
+        cardPanel.setLayout(new BoxLayout(cardPanel, BoxLayout.Y_AXIS));
+        cardPanel.setBorder(new EmptyBorder(0, 20, 0, 20));
+        
+        // Top row: 3 cards
+        JPanel topRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 20));
+        JPanel cpuCard = createCard("CPU", template.getCPUInfo());
+        JPanel memCard = createCard("Memory", template.getMemoryInfo());
+        JPanel diskCard = createCard("Disk", template.getDiskInfo());
+        cpuCard.setPreferredSize(new Dimension(200, 200));
+        memCard.setPreferredSize(new Dimension(200, 200));
+        diskCard.setPreferredSize(new Dimension(200, 200));
+        topRow.add(cpuCard);
+        topRow.add(memCard);
+        topRow.add(diskCard);
+        
+        // Bottom row: 2 cards (wider - each 300px)
+        JPanel bottomRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 20));
+        JPanel pciCard = createCard("PCI", template.getPCIInfo());
+        JPanel usbCard = createCard("USB", template.getUSBInfo());
+        pciCard.setPreferredSize(new Dimension(800, 200));
+        usbCard.setPreferredSize(new Dimension(800, 200));
+        bottomRow.add(pciCard);
+        bottomRow.add(usbCard);
+        
+        cardPanel.add(topRow);
+        cardPanel.add(bottomRow);
 
         mainPanel.add(cardPanel, BorderLayout.CENTER);
-
-        // Notification glass pane
-        notificationGlass = new JPanel(new GridBagLayout()) {
-            @Override
-            public boolean isOpaque() {
-                return false;
-            }
-        };
-        notificationLabel = new JLabel("", SwingConstants.CENTER);
-        notificationLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        notificationLabel.setOpaque(true);
-        notificationLabel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        notificationGlass.add(notificationLabel, new GridBagConstraints());
-        notificationGlass.setVisible(false);
-
-        // Overlay notificationGlass on this panel
-        add(notificationGlass);
-        add(mainPanel);
     }
 
     private JPanel createCard(String title, String description) {
@@ -79,20 +74,5 @@ public class SysInfoDashboard extends JPanel {
         card.add(scroll, BorderLayout.CENTER);
 
         return card;
-    }
-
-    // Show notification overlay
-    public void showNotification(String message, int durationMs) {
-        notificationLabel.setText(message);
-        notificationGlass.setVisible(true);
-        notificationGlass.revalidate();
-        notificationGlass.repaint();
-
-        if (notificationTimer != null && notificationTimer.isRunning())
-            notificationTimer.stop();
-
-        notificationTimer = new Timer(durationMs, e -> notificationGlass.setVisible(false));
-        notificationTimer.setRepeats(false);
-        notificationTimer.start();
     }
 }

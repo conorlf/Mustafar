@@ -132,6 +132,10 @@ public class template
     public static String getPCIInfo() {
         if (pciDevices.isEmpty()) return "No PCI devices";
         StringBuilder sb = new StringBuilder();
+        sb.append(String.format("%-8s %-8s %-8s %-8s  %-8s  %-30s %-30s%n",
+            "Bus", "Device", "Func", "Vendor", "Product", "Vendor Name", "Device Name"));
+        sb.append(String.format("%-8s %-8s %-8s %-8s  %-8s  %-30s %-30s%n",
+            "---", "------", "----", "------", "-------", "-----------", "-----------"));
         for (PciDevice device : pciDevices) {
             sb.append(String.format("%-8d %-8d %-8d 0x%04X  0x%04X  %-30s %-30s%n",
                 device.bus, device.device, device.function, device.vendorID, device.productID,
@@ -143,6 +147,10 @@ public class template
     public static String getUSBInfo() {
         if (usbDevices.isEmpty()) return "No USB devices";
         StringBuilder sb = new StringBuilder();
+        sb.append(String.format("%-8s %-8s %-8s  %-8s  %-30s %-30s%n",
+            "Bus", "Device", "Vendor", "Product", "Vendor Name", "Device Name"));
+        sb.append(String.format("%-8s %-8s %-8s  %-8s  %-30s %-30s%n",
+            "---", "------", "------", "-------", "-----------", "-----------"));
         for (UsbDevice device : usbDevices) {
             sb.append(String.format("%-8d %-8d 0x%04X  0x%04X  %-30s %-30s%n",
                 device.bus, device.device, device.vendorID, device.productID, 
