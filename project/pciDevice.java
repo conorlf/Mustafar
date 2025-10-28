@@ -1,4 +1,5 @@
-class pciDevice {
+
+public class pciDevice {
    // attributes
    public int bus;
    public int device;
