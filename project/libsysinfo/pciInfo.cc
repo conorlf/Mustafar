@@ -42,7 +42,7 @@ struct PCIDevice
 
 struct PCIBus
 {
-    static const int maxDevice = 32;
+    static const int maxDevice = 255;
     int deviceCount;
     PCIDevice device[maxDevice];
 };
@@ -57,7 +57,7 @@ public:
     int functionPresent (int bus, int device, int function) { return _bus[bus].device[device].function[function].present; }
     int vendorID (int bus, int device, int function) { return _bus[bus].device[device].function[function].vendor; }
     int productID (int bus, int device, int function) { return _bus[bus].device[device].function[function].product; }
-    static const int maxBus = 64;
+    static const int maxBus = 255;
 
 private:
     int _busCount;
