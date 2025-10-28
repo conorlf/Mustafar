@@ -1,0 +1,204 @@
+import javax.swing.*;
+import java.util.List;
+import java.util.ArrayList;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.axis.DateAxis;
+import org.jfree.data.time.Second;
+import org.jfree.data.time.TimeSeries;
+import org.jfree.data.time.TimeSeriesCollection;
+import systeminfo.Computer;
+import systeminfo.CpuCore;
+import systeminfo.CpuTimings;
+import systeminfo.Disk;
+import systeminfo.DiskBlocks;
+
+public class Gui {
+
+    public static JPanel createSystemInfoTab(Computer computer) {
+        JTextArea infoArea = new JTextArea(15, 50);
+        infoArea.setEditable(false);
+        infoArea.setFont(new java.awt.Font("Monospaced", java.awt.Font.PLAIN, 12));
+
+        JScrollPane scrollPane = new JScrollPane(infoArea);
+        JPanel panel = new JPanel(new java.awt.BorderLayout());
+        panel.add(scrollPane, java.awt.BorderLayout.CENTER);
+
+        // Timer to refresh every 5 seconds
+        new javax.swing.Timer(5000, e -> {
+            StringBuilder sb = new StringBuilder();
+            sb.append("=== SYSTEM INFORMATION ===\n\n");
+
+            // CPU Info
+            sb.append("CPU Model: ").append(computer.cpu.model).append("\n");
+            sb.append("Cores: ").append(computer.cpu.cores.size()).append("\n\n");
+
+            // Memory Info
+            sb.append("=== MEMORY ===\n");
+            sb.append(String.format("Total: %d KB\nUsed: %d KB\nUsage: %.2f%%\n\n",
+                    computer.memory.totalMemory,
+                    computer.memory.usedMemory,
+                    computer.memory.usagePercent));
+
+            // Disk Info
+            sb.append("=== DISKS ===\n");
+            for (var d : computer.disks) {
+                sb.append(String.format("%s\n",
+                        d.name));
+                // d.usedBlockCount,
+                // d.blockCount,
+                // (double) d.usedBlockCount / d.blockCount * 100));
+            }
+            sb.append("\n");
+
+            // PCI Info
+            sb.append("=== PCI DEVICES ===\n");
+            for (var bus : computer.pciBuses) {
+                for (var device : bus.pciDevices) {
+                    for (var function : device.pciFunctions) {
+                        sb.append(String.format("Bus %d, Device %d, Function %d, Vendor: %s, Product: %s\n",
+                                bus.busIndex, device.deviceIndex, function.functionIndex,
+                                function.vendorId, function.productId));
+                    }
+                }
+            }
+
+            infoArea.setText(sb.toString());
+            infoArea.setCaretPosition(0); // Scroll to top
+        }).start();
+
+        return panel;
+    }
+
+    public static void showChart(Computer computer, SystemInfoWorker worker) {
+
+        TimeSeriesCollection datasetCpu = new TimeSeriesCollection();
+        List<TimeSeries> coreSeries = new ArrayList<>();
+
+        for (CpuCore core : computer.cpu.cores) {
+            TimeSeries coreTimeSeries = new TimeSeries("Core " + core.index);
+            coreSeries.add(coreTimeSeries);
+            datasetCpu.addSeries(coreTimeSeries);
+        }
+
+        TimeSeriesCollection datasetMem = new TimeSeriesCollection();
+        TimeSeries memTimeSeries = new TimeSeries("Memory Usage");
+        datasetMem.addSeries(memTimeSeries);
+
+        TimeSeriesCollection datasetDisk = new TimeSeriesCollection();
+        List<TimeSeries> diskSeries = new ArrayList<>();
+
+        for (Disk disk : computer.disks) {
+            TimeSeries diskTimeSeries = new TimeSeries(disk.name);
+            diskSeries.add(diskTimeSeries);
+            datasetDisk.addSeries(diskTimeSeries);
+        }
+
+        JFreeChart cpuChart = ChartFactory.createTimeSeriesChart("CPU Usage", "Time", "Usage (%)", datasetCpu, true,
+                true, false);
+        JFreeChart memChart = ChartFactory.createTimeSeriesChart("Memory Usage", "Time", "Usage (%)", datasetMem, true,
+                false, false);
+        JFreeChart diskChart = ChartFactory.createTimeSeriesChart("Disk Usage", "Time", "Usage (%)", datasetDisk, true,
+                true, false);
+
+        JTabbedPane tabs = new JTabbedPane();
+        tabs.addTab("CPU Graph", new ChartPanel(cpuChart));
+        tabs.addTab("Memory Graph", new ChartPanel(memChart));
+        tabs.addTab("Disk Graph", new ChartPanel(diskChart));
+        SysInfoDashboard dashboard = new SysInfoDashboard(); // ensure it can expand
+        tabs.addTab("System Info", dashboard);
+
+        JFrame frame = new JFrame();
+        frame.add(tabs);
+
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent e) {
+                worker.stopWorker();
+            }
+        });
+
+        // cpu graph config
+        XYPlot cpuPlot = cpuChart.getXYPlot();
+        NumberAxis cpuRange = (NumberAxis) cpuPlot.getRangeAxis();
+        cpuRange.setRange(0.0, 100.0);
+        DateAxis cpuDomain = (DateAxis) cpuPlot.getDomainAxis();
+        cpuDomain.setFixedAutoRange(60000);
+        XYLineAndShapeRenderer cpuRenderer = (XYLineAndShapeRenderer) cpuPlot.getRenderer();
+        cpuRenderer.setDefaultShapesVisible(false);
+
+        // memory graph config
+        XYPlot memPlot = memChart.getXYPlot();
+        NumberAxis memRange = (NumberAxis) memPlot.getRangeAxis();
+        memRange.setRange(0.0, 100.0);
+        DateAxis memDomain = (DateAxis) memPlot.getDomainAxis();
+        memDomain.setFixedAutoRange(60000);
+        XYLineAndShapeRenderer memRenderer = (XYLineAndShapeRenderer) memPlot.getRenderer();
+        memRenderer.setDefaultShapesVisible(false);
+
+        // disk graph config
+        XYPlot diskPlot = diskChart.getXYPlot();
+        NumberAxis diskRange = (NumberAxis) diskPlot.getRangeAxis();
+        diskRange.setRange(0.0, 100.0);
+        DateAxis diskDomain = (DateAxis) diskPlot.getDomainAxis();
+        diskDomain.setFixedAutoRange(60000);
+        XYLineAndShapeRenderer diskRenderer = (XYLineAndShapeRenderer) diskPlot.getRenderer();
+        diskRenderer.setDefaultShapesVisible(false);
+
+        frame.setSize(900, 600);
+        frame.setVisible(true);
+
+        int[] lastPlotted = new int[computer.cpu.cores.size()];
+        int[] lastPlottedDisk = new int[computer.disks.size()];
+        // updates cpu chart once per second on swing thread
+        new javax.swing.Timer(1000, e -> {
+            Second now = new Second();
+            for (int i = 0; i < computer.cpu.cores.size(); i++) {
+                CpuCore core = computer.cpu.cores.get(i);
+                TimeSeries ts = coreSeries.get(i);
+
+                for (int j = lastPlotted[i]; j < core.cpuTimings.size(); j++) {
+                    CpuTimings t = core.cpuTimings.get(j);
+                    ts.addOrUpdate(now, t.usagePercent);
+                }
+                lastPlotted[i] = core.cpuTimings.size();
+
+                // deletes points older than 60 seconds as it's not being displayed on graph
+                while (ts.getItemCount() > 0
+                        && ts.getTimePeriod(0).getLastMillisecond() < now.getFirstMillisecond() - 60000) {
+                    ts.delete(0, 0);
+                }
+            }
+
+            // updates memory chart
+            memTimeSeries.addOrUpdate(now, computer.memory.usagePercent);
+            while (memTimeSeries.getItemCount() > 0
+                    && memTimeSeries.getTimePeriod(0).getLastMillisecond() < now.getFirstMillisecond() - 60000) {
+                memTimeSeries.delete(0, 0);
+            }
+
+            // updates disk chart
+            for (int i = 0; i < computer.disks.size(); i++) {
+                Disk disk = computer.disks.get(i);
+                TimeSeries ts = diskSeries.get(i);
+
+                for (int j = lastPlottedDisk[i]; j < disk.diskBlocks.size(); j++) {
+                    DiskBlocks t = disk.diskBlocks.get(j);
+                    ts.addOrUpdate(now, t.usagePercent);
+                }
+                lastPlottedDisk[i] = disk.diskBlocks.size();
+
+                // deletes points older than 60 seconds as it's not being displayed on graph
+                while (ts.getItemCount() > 0
+                        && ts.getTimePeriod(0).getLastMillisecond() < now.getFirstMillisecond() - 60000) {
+                    ts.delete(0, 0);
+                }
+            }
+        }).start();
+    }
+}
