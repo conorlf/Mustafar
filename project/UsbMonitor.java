@@ -52,13 +52,12 @@ public List<UsbDevice> scanOnce() {
     List<String> added = new ArrayList<>();
     List<String> removed = new ArrayList<>();
 
-    if (!oldIds.isEmpty()) {
-        added.addAll(newIds);
-        added.removeAll(new HashSet<>(oldIds));
+    // Compute deltas; on first run oldIds is empty, so all are treated as added
+    added.addAll(newIds);
+    added.removeAll(new HashSet<>(oldIds));
 
-        removed.addAll(oldIds);
-        removed.removeAll(new HashSet<>(newIds));
-    }
+    removed.addAll(oldIds);
+    removed.removeAll(new HashSet<>(newIds));
 
     // Update state each tick
     oldIds.clear();

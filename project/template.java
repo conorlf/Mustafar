@@ -84,7 +84,7 @@ public class template
 
     }
 
-    public static void refreshUsbInfo() {
+    public static boolean refreshUsbInfo() {
                 // Iterate through all of the USB buses
         
 
@@ -93,7 +93,9 @@ public class template
         if (result != null) {
             usbDevices.clear();         // remove old elements
             usbDevices.addAll(result); 
+            return true;
         }
+        return false;
          
         
     }
@@ -191,9 +193,9 @@ public class template
         cpu.read(0);        
         loadPciInfo();
         showPCI();
-        usbScan1.scanOnce();
-        refreshUsbInfo();
+        if (refreshUsbInfo()) {
         showUsbInfo();
+        }
                 // start background sampler collecting real-time data
         SystemInfoWorker worker = new SystemInfoWorker();
         worker.start();

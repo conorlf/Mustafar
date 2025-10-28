@@ -12,7 +12,9 @@ public class SystemInfoWorker extends Thread {
             template.sampleCpuUsage();
             template.refreshMemoryInfo();
             template.refreshDiskUsage();
-            template.refreshUsbInfo();
+            if (template.refreshUsbInfo()) {
+            template.showUsbInfo();
+            }
             
             
 
