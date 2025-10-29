@@ -41,17 +41,27 @@ public class SysInfoDashboard extends JPanel {
         // Bottom row: 2 cards (wider - each 300px)
         JPanel bottomRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 20));
         JPanel pciCard = createCard("PCI", template.getPCIInfo());
-        usbCard = createCard("USB", template.getUSBInfo());
+        usbCard = createCard("USB", "NO DATA");
         pciCard.setPreferredSize(new Dimension(800, 200));
         usbCard.setPreferredSize(new Dimension(800, 200));
         bottomRow.add(pciCard);
         bottomRow.add(usbCard);
 
+        // set listener for real USB changes
         template.usbScan1.setListener((newList, added, removed) -> {
-            if (!added.isEmpty() || !removed.isEmpty()) {
-                SwingUtilities.invokeLater(() -> usbCard.updateCard(template.showUsbInfoJNI()));
-            }
+            SwingUtilities.invokeLater(() -> {
+                usbCard.updateCard(template.showUsbInfoJNI());
+                System.out.println("[USB] Card updated with live JNI data.");
+            });
         });
+
+        // trigger test refresh immediately
+        SwingUtilities.invokeLater(() -> {
+            usbCard.updateCard("USB UPDATED - test refresh");
+            System.out.println("[USB Test] usbCard shows UPDATED for testing.");
+        });
+
+        template.usbScan1.start();
 
         cardPanel.add(topRow);
         cardPanel.add(bottomRow);
