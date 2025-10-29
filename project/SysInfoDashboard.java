@@ -54,7 +54,11 @@ public class SysInfoDashboard extends JPanel {
                 System.out.println("[USB] Card updated with live JNI data.");
             });
         });
-
+        try {
+            Thread.sleep(2000); // 2 second pause
+        } catch (InterruptedException ex) {
+            ex.printStackTrace();
+        }
         // trigger test refresh immediately
         SwingUtilities.invokeLater(() -> {
             usbCard.updateCard("USB UPDATED - test refresh");
