@@ -20,11 +20,6 @@ public class SysInfoDashboard extends JPanel {
         title.setFont(new Font("Segoe UI", Font.BOLD, 22));
         topBar.add(title, BorderLayout.WEST);
 
-        // Add refresh button to top bar
-        refreshUsbButton = new JButton("Refresh All");
-        refreshUsbButton.addActionListener(e -> refreshAllCards());
-        topBar.add(refreshUsbButton, BorderLayout.EAST);
-
         mainPanel.add(topBar, BorderLayout.NORTH);
 
         // Cards panel
@@ -75,16 +70,12 @@ public class SysInfoDashboard extends JPanel {
     }
 
     /** Simple USB refresh - just get fresh data and update the card */
-    private void refreshUsbCard() {
+    public void refreshUsbCard() {
         String newUsbInfo = template.getUSBInfo();
         usbCard.updateCard(newUsbInfo);
         System.out.println("USB info refreshed manually");
     }
 
     /** Refresh all system information cards */
-    private void refreshAllCards() {
-        // Note: CPU, Memory, Disk would need similar refresh methods
-        refreshUsbCard();
-        System.out.println("All system info refreshed");
-    }
+
 }
