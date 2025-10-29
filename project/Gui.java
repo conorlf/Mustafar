@@ -17,7 +17,6 @@ import systeminfo.CpuTimings;
 import systeminfo.Disk;
 import systeminfo.DiskBlocks;
 
-
 public class Gui {
 
     public static JPanel createSystemInfoTab(Computer computer) {
@@ -49,17 +48,19 @@ public class Gui {
             datasetDisk.addSeries(diskTimeSeries);
         }
 
-        JFreeChart cpuChart = ChartFactory.createTimeSeriesChart("CPU Usage", "Time", "Usage (%)", datasetCpu, true, true, false);
-        JFreeChart memChart = ChartFactory.createTimeSeriesChart("Memory Usage", "Time", "Usage (%)", datasetMem, true, false, false);
-        JFreeChart diskChart = ChartFactory.createTimeSeriesChart("Disk Usage", "Time", "Usage (%)", datasetDisk, true, true, false);
-
+        JFreeChart cpuChart = ChartFactory.createTimeSeriesChart("CPU Usage", "Time", "Usage (%)", datasetCpu, true,
+                true, false);
+        JFreeChart memChart = ChartFactory.createTimeSeriesChart("Memory Usage", "Time", "Usage (%)", datasetMem, true,
+                false, false);
+        JFreeChart diskChart = ChartFactory.createTimeSeriesChart("Disk Usage", "Time", "Usage (%)", datasetDisk, true,
+                true, false);
 
         JTabbedPane tabs = new JTabbedPane();
         tabs.addTab("System Information", createSystemInfoTab(computer));
         tabs.addTab("CPU Graph", new ChartPanel(cpuChart));
         tabs.addTab("Memory Graph", new ChartPanel(memChart));
         tabs.addTab("Disk Graph", new ChartPanel(diskChart));
-        
+
         JFrame frame = new JFrame();
         frame.add(tabs);
 
@@ -67,7 +68,7 @@ public class Gui {
         frame.addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(java.awt.event.WindowEvent e) {
-                worker.stopWorker(); 
+                worker.stopWorker();
             }
         });
 
@@ -105,7 +106,7 @@ public class Gui {
         int[] lastPlottedDisk = new int[computer.disks.size()];
         // updates cpu chart once per second on swing thread
         new javax.swing.Timer(1000, e -> {
-            Second now = new Second(); 
+            Second now = new Second();
             for (int i = 0; i < computer.cpu.cores.size(); i++) {
                 CpuCore core = computer.cpu.cores.get(i);
                 TimeSeries ts = coreSeries.get(i);
@@ -117,17 +118,19 @@ public class Gui {
                 lastPlotted[i] = core.cpuTimings.size();
 
                 // deletes points older than 60 seconds as it's not being displayed on graph
-                while (ts.getItemCount() > 0 && ts.getTimePeriod(0).getLastMillisecond() < now.getFirstMillisecond() - 60000) { 
+                while (ts.getItemCount() > 0
+                        && ts.getTimePeriod(0).getLastMillisecond() < now.getFirstMillisecond() - 60000) {
                     ts.delete(0, 0);
                 }
             }
 
             // updates memory chart
             memTimeSeries.addOrUpdate(now, computer.memory.usagePercent);
-            while (memTimeSeries.getItemCount() > 0 && memTimeSeries.getTimePeriod(0).getLastMillisecond() < now.getFirstMillisecond() - 60000) { 
+            while (memTimeSeries.getItemCount() > 0
+                    && memTimeSeries.getTimePeriod(0).getLastMillisecond() < now.getFirstMillisecond() - 60000) {
                 memTimeSeries.delete(0, 0);
             }
-            
+
             // updates disk chart
             for (int i = 0; i < computer.disks.size(); i++) {
                 Disk disk = computer.disks.get(i);
@@ -140,7 +143,8 @@ public class Gui {
                 lastPlottedDisk[i] = disk.diskBlocks.size();
 
                 // deletes points older than 60 seconds as it's not being displayed on graph
-                while (ts.getItemCount() > 0 && ts.getTimePeriod(0).getLastMillisecond() < now.getFirstMillisecond() - 60000) { 
+                while (ts.getItemCount() > 0
+                        && ts.getTimePeriod(0).getLastMillisecond() < now.getFirstMillisecond() - 60000) {
                     ts.delete(0, 0);
                 }
             }

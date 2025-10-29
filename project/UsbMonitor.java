@@ -1,80 +1,118 @@
 import java.util.*;
+import java.util.concurrent.*;
+
+import javax.swing.SwingUtilities;
+
 import systeminfo.*;
-//import java.util.concurrent.*;
 
-public final class UsbMonitor{
-    /*private final ScheduledExecutorService exec =
-            Executors.newSingleThreadScheduledExecutor(r -> {
-                Thread t = new Thread(r, "usb-monitor");
-                t.setDaemon(true); // don’t block JVM exit
-                return t;
-            });
+public final class UsbMonitor implements AutoCloseable {
+    private final ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor(r -> {
+        Thread t = new Thread(r, "usb-monitor");
+        t.setDaemon(true); // allow JVM to exit
+        return t;
+    });
 
-    private final long periodMs;// length of time monitor refreshes
-    */
-    public volatile List<String> oldIds = new ArrayList<>();
-    public List<UsbDevice> oldList = new ArrayList<>();
+    private final long periodMs = 2000L; // scan every 2 seconds (adjust as needed)
+
+    // state used to compute diffs
+    private final List<String> oldIds = new ArrayList<>();
+    private final List<UsbDevice> oldList = new ArrayList<>();
+
+    // optional listener (single) that can be notified when devices change
+    public interface Listener {
+        void onUsbChange(List<UsbDevice> newList, List<String> added, List<String> removed);
+    }
+
+    private volatile Listener listener;
 
     public UsbMonitor() {
-        
     }
-    /*
+
+    /** Start periodic scanning. Idempotent if already started. */
     public void start() {
         exec.scheduleAtFixedRate(this::scanOnceSafe, 0, periodMs, TimeUnit.MILLISECONDS);
     }
 
-    @Override public void close() {
+    /** Stop scanning and free resources. */
+    @Override
+    public void close() {
         exec.shutdownNow();
     }
 
+    public void setListener(Listener l) {
+        this.listener = l;
+    }
+
     private void scanOnceSafe() {
-        try { scanOnce(); } catch (Throwable t) {
-            System.out.println("[USB Monitor] Error: " + t.getMessage());
-        }
-    }*/
-
-
-public List<UsbDevice> scanOnce() {
-    usbInfo usb = new usbInfo();
-    usb.read();
-
-    List<String> newIds = new ArrayList<>();
-    List<UsbDevice> newList = new ArrayList<>();
-
-    for (int bus = 1; bus <= usb.busCount(); bus++) {
-        for (int dev = 1; dev <= usb.deviceCount(bus); dev++) {
-            UsbDevice device = new UsbDevice(bus, dev, usb.vendorID(bus, dev), usb.productID(bus, dev));
-            newList.add(device);
-            newIds.add(device.getUniqueID());
+        try {
+            List<UsbDevice> newList = scanOnce(); // returns newList (never null)
+            // if you want immediate handling here, we could call listener
+            // but scanOnce already computes added/removed and prints them.
+        } catch (Throwable t) {
+            System.out.println("[USB Monitor] Error: " + t);
+            t.printStackTrace();
         }
     }
 
-    List<String> added = new ArrayList<>();
-    List<String> removed = new ArrayList<>();
+    /**
+     * Do one scan and return the list of devices (never null).
+     * Also prints added/removed and notifies optional listener.
+     */
+    public List<UsbDevice> scanOnce() {
+        usbInfo usb = new usbInfo();
+        usb.read();
 
-    // Compute deltas; on first run oldIds is empty, so all are treated as added
-    added.addAll(newIds);
-    added.removeAll(new HashSet<>(oldIds));
+        List<String> newIds = new ArrayList<>();
+        List<UsbDevice> newList = new ArrayList<>();
 
-    removed.addAll(oldIds);
-    removed.removeAll(new HashSet<>(newIds));
+        for (int bus = 1; bus <= usb.busCount(); bus++) {
+            for (int dev = 1; dev <= usb.deviceCount(bus); dev++) {
+                UsbDevice device = new UsbDevice(bus, dev, usb.vendorID(bus, dev), usb.productID(bus, dev));
+                newList.add(device);
+                newIds.add(device.getUniqueID());
+            }
+        }
 
-    // Update state each tick
-    oldIds.clear();
-    oldIds.addAll(newIds);
-    oldList.clear();
-    oldList.addAll(newList);
+        // compute deltas
+        List<String> added = new ArrayList<>(newIds);
+        added.removeAll(oldIds);
 
-    if (!added.isEmpty() || !removed.isEmpty()) {
-    for (String id : added)
-        System.out.println("[USB] Added: " + id);
-    for (String id : removed)
-        System.out.println("[USB] Removed: " + id);
+        List<String> removed = new ArrayList<>(oldIds);
+        removed.removeAll(newIds);
 
-    return newList; 
+        // update state
+        synchronized (this) {
+            oldIds.clear();
+            oldIds.addAll(newIds);
+            oldList.clear();
+            oldList.addAll(newList);
+        }
+
+        if (!added.isEmpty() || !removed.isEmpty()) {
+            for (String id : added)
+                System.out.println("[USB] Added: " + id);
+            for (String id : removed)
+                System.out.println("[USB] Removed: " + id);
+
+        }
+
+        // notify listener (non-blocking: call on a new thread to avoid blocking
+        // scheduler)
+        Listener l = listener;
+        if (l != null) {
+            final List<UsbDevice> snapshot = Collections.unmodifiableList(new ArrayList<>(newList));
+            final List<String> addedSnapshot = Collections.unmodifiableList(new ArrayList<>(added));
+            final List<String> removedSnapshot = Collections.unmodifiableList(new ArrayList<>(removed));
+            // notify off the scheduler thread to avoid long-running listener blocking scans
+            CompletableFuture.runAsync(() -> {
+                try {
+                    l.onUsbChange(snapshot, addedSnapshot, removedSnapshot);
+                } catch (Throwable t) {
+                    System.out.println("[USB Monitor] listener error: " + t);
+                }
+            });
+        }
+
+        return newList;
+    }
 }
-
-return null;
-}
-   
-} 
