@@ -24,15 +24,8 @@ libsysinfo/libsysinfo.so:
 
 # Compile Java sources
 compile_java:
-	@echo "Compiling Java sources with JFreeChart..."
 	javac -cp $(JFC_JAR):. $(JAVA_SOURCES)
 
 # Run the program
 run: all
-	@echo "Running $(MYPROJECT) with JFreeChart..."
 	java -cp $(JFC_JAR):. -Djava.library.path=libsysinfo $(MYPROJECT)
-
-# Clean compiled files
-clean:
-	rm -f *.class systeminfo/*.class *.h
-	$(MAKE) -C libsysinfo clean
