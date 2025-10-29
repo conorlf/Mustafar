@@ -6,9 +6,7 @@
 
 import systeminfo.*;
 import java.util.List;
-import java.util.Scanner;
 import java.util.ArrayList;
-//import java.util.Dictionary;
 
 public class template {
     public static Computer computer = new Computer();
@@ -20,15 +18,29 @@ public class template {
     public static List<UsbDevice> usbDevices = new ArrayList<>();
     public static List<PciDevice> pciDevices = new ArrayList<>();
 
-    // public static int pciBusCount, pciDeviceCount,pciFunctionCount;
+    // Hold reference to the displayed dashboard for updates
+    public static SysInfoDashboard sysDash;
+
+    public static void registerDashboard(SysInfoDashboard dash) {
+        sysDash = dash;
+    }
+
+    public static void updateUsbCardTest(String text) {
+        if (sysDash != null) {
+            SysInfoDashboard.updateUsbCard(sysDash, text);
+        }
+    }
+
+    public static void updateUsbCardLive() {
+        if (sysDash != null) {
+            SysInfoDashboard.updateUsbCard(sysDash, showUsbInfoJNI());
+        }
+    }
+
     public static void loadCpuInfo() {
         cpu.read(0);
-        // read all the static info - i.e. nujmber cores, model etc.populate it to our
-        // data structure
         Cpu myCpu = new Cpu(cpu.getModel(), cpu.socketCount(), cpu.coresPerSocket(), cpu.l1dCacheSize(),
                 cpu.l1iCacheSize(), cpu.l2CacheSize(), cpu.l3CacheSize());
-
-        // assuming all sockets are identical
         for (int i = 0; i < myCpu.socketCount; i++) {
             for (int j = 0; j < myCpu.coresPerSocket; j++) {
                 CpuCore core = new CpuCore(j);
@@ -39,9 +51,7 @@ public class template {
     }
 
     public static void loadPciInfo() {
-
         pci.read();
-
         for (int bus = 0; bus < pci.busCount(); bus++) {
             for (int dev = 0; dev < pci.deviceCount(bus); dev++) {
                 for (int function = 0; function < 8; function++) {
@@ -51,65 +61,47 @@ public class template {
                         pciDevices.add(device);
                     }
                 }
-
             }
         }
-
     }
 
     public static void showPCI() {
-
-        System.out.println("\nThis machine has " +
-                pci.busCount() + " PCI buses ");
-
-        // Iterate through each bus
+        System.out.println("\nThis machine has " + pci.busCount() + " PCI buses ");
         for (int i = 0; i < pci.busCount(); i++) {
-            System.out.println("Bus " + i + " has " +
-                    pci.deviceCount(i) + " devices");
-
+            System.out.println("Bus " + i + " has " + pci.deviceCount(i) + " devices");
         }
         if (pciDevices == null || pciDevices.isEmpty()) {
             System.out.println("No PCI devices found.");
             return;
         }
         System.out.println("PCI Devices Detected: " + pciDevices.size());
-
         System.out.printf("%-8s %-8s %-8s %-12s %-12s %-30s %-30s%n", "Bus", "Device", "Func", "Vendor ID",
                 "Product ID", "Vendor Name", "Device Name");
-
         for (PciDevice device : pciDevices) {
             device.displayPciInfo();
         }
-
     }
 
     public static boolean refreshUsbInfo() {
-        // Iterate through all of the USB buses
-
         List<UsbDevice> result = usbScan1.scanOnce();
-
         if (result != null) {
-            usbDevices.clear(); // remove old elements
+            usbDevices.clear();
             usbDevices.addAll(result);
             return true;
         }
         return false;
-
     }
 
     public static void showUsbInfo() {
         System.out.println("showUsbInfo(): Found " + usbDevices.size() + " devices.");
-
         for (UsbDevice device : usbDevices) {
             device.displayUsbInfo();
         }
-
     }
 
     public static String showUsbInfoJNI() {
         usbInfo usb = new usbInfo();
         usb.read();
-
         StringBuilder sb = new StringBuilder();
         sb.append(String.format("%-8s %-8s %-8s  %-8s  %-30s %-30s%n",
                 "Bus", "Device", "Vendor", "Product", "Vendor Name", "Device Name"));
@@ -120,18 +112,16 @@ public class template {
             for (int dev = 1; dev <= usb.deviceCount(bus); dev++) {
                 int vendorId = usb.vendorID(bus, dev);
                 int productId = usb.productID(bus, dev);
-                // you can optionally look up vendor/device names using Dictionary
                 String vendorName = Dictionary.getUSBVendorName(vendorId);
                 String deviceName = Dictionary.getUSBDeviceName(vendorId, productId);
                 sb.append(String.format("%-8d %-8d 0x%04X  0x%04X  %-30s %-30s%n",
                         bus, dev, vendorId, productId, vendorName, deviceName));
             }
         }
-
         return sb.toString();
     }
 
-    // Helper methods to return formatted strings for cards
+    // CPU, Memory, Disk, PCI helper methods
     public static String getCPUInfo() {
         if (computer.cpu == null)
             return "CPU not loaded";
@@ -158,7 +148,6 @@ public class template {
         }
         sb.append("Total disks \n");
         sb.append(disk.diskCount());
-
         return sb.toString().trim();
     }
 
@@ -194,7 +183,6 @@ public class template {
         return sb.toString();
     }
 
-    // disks are one based
     public static void loadDiskInfo() {
         disk.read();
         for (int i = 0; i < disk.diskCount(); i++) {
@@ -242,37 +230,22 @@ public class template {
 
     public static void main(String[] args) {
         System.loadLibrary("sysinfo");
-        // System.loadLibrary("sysinfo");
+
         String usbPath = "usb.ids";
         System.out.println("Loading USB dictionary...");
-        long var3 = System.currentTimeMillis();
+        long start = System.currentTimeMillis();
         Dictionary.loadUSBDictionary(usbPath);
-        long var5 = System.currentTimeMillis();
-        var5 -= var3;
-        System.out.println("Dictionary loaded. " + var5);
+        System.out.println("Dictionary loaded in " + (System.currentTimeMillis() - start) + " ms.");
+
         String pciPath = "pci.ids";
         System.out.println("Loading PCI dictionary...");
-        var3 = System.currentTimeMillis();
+        start = System.currentTimeMillis();
         Dictionary.loadPCIDictionary(pciPath);
-        var5 = System.currentTimeMillis();
-        var5 -= var3;
-        System.out.println("Dictionary loaded. " + var5);
-        // new sysInfo();
-        // cpuInfo var9 = new cpuInfo();
-        // var9.read(0);
+        System.out.println("Dictionary loaded in " + (System.currentTimeMillis() - start) + " ms.");
 
         loadCpuInfo();
         loadMemoryInfo();
         loadDiskInfo();
-        /*
-         * load static hardware info once
-         * loadCpuInfo();
-         * loadPciInfo();
-         * loadUsbInfo();
-         * loadDiskInfo();
-         * loadMemoryInfo();
-         */
-        // warm up CPU info
         cpu.read(0);
         loadPciInfo();
         showPCI();
@@ -281,13 +254,13 @@ public class template {
         }
         usbScan1.start();
 
-        // start background sampler collecting real-time data
         SystemInfoWorker worker = new SystemInfoWorker();
         worker.start();
 
         Gui.showChart(computer, worker);
-        SysInfoDashboard dashboard = new SysInfoDashboard();
-        SysInfoDashboard.updateUsbCard(dashboard);
 
+        SysInfoDashboard dashboard = new SysInfoDashboard();
+        registerDashboard(dashboard);
+        updateUsbCardLive();
     }
 }
