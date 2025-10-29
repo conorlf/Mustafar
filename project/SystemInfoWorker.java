@@ -5,20 +5,26 @@ public class SystemInfoWorker extends Thread {
 
     public void run() {
         while (running) {
-            // takes around 1 second and collects usage data for that one second
-
+            // Only handle CPU, Memory, and Disk - USB is now manual refresh only
             template.sampleCpuUsage();
             template.refreshMemoryInfo();
             template.refreshDiskUsage();
-            if (template.refreshUsbInfo()) {
-                template.showUsbInfo();
-            }
 
+            // REMOVED: USB auto-refresh logic
+            // if (template.refreshUsbInfo()) {
+            // template.showUsbInfo();
+            // }
+
+            try {
+                Thread.sleep(1000); // Sleep for 1 second between samples
+            } catch (InterruptedException e) {
+                break;
+            }
         }
     }
 
     public void stopWorker() {
         running = false;
+        interrupt(); // Also interrupt the sleep
     }
-
 }

@@ -169,6 +169,18 @@ public class template {
         computer.memory = myMemory;
     }
 
+    // Simplified versions that work with manual refresh
+    public static boolean refreshUsbInfo() {
+        // Can still read USB if needed, but won't trigger GUI updates
+        return true;
+    }
+
+    public static void showUsbInfo() {
+        // Just print to console for debugging
+        System.out.println("Current USB devices:");
+        System.out.println(getUSBInfo());
+    }
+
     public static void sampleCpuUsage() {
         cpu.read(1);
         for (int i = 0; i < computer.cpu.cores.size(); i++) {
