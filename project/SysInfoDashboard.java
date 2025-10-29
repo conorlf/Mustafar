@@ -55,7 +55,7 @@ public class SysInfoDashboard extends JPanel {
             });
         });
         try {
-            Thread.sleep(2000); // 2 second pause
+            Thread.sleep(6000); // 2 second pause
         } catch (InterruptedException ex) {
             ex.printStackTrace();
         }
