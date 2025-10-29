@@ -50,23 +50,15 @@ public class SysInfoDashboard extends JPanel {
         cardPanel.add(bottomRow);
         mainPanel.add(cardPanel, BorderLayout.CENTER);
 
-        // --- Register this dashboard in template ---
+        // Register this dashboard in template
         template.registerDashboard(this);
 
-        // --- Test update: show "Hello World" for 2 seconds ---
-        usbCard.updateCard("Hello World");
-        new Thread(() -> {
-            try {
-                Thread.sleep(2000);
-            } catch (InterruptedException ignored) {
-            }
-            SwingUtilities.invokeLater(template::updateUsbCardLive);
-        }).start();
+        // Test update: show "Hello World" for 2 seconds
+        refreshUsbCardTest("Hello World", 2000);
 
-        // --- Live USB updates ---
-        template.usbScan1.setListener((newList, added, removed) -> {
-            SwingUtilities.invokeLater(template::updateUsbCardLive);
-        });
+        // Live USB updates
+        template.usbScan1
+                .setListener((newList, added, removed) -> SwingUtilities.invokeLater(template::updateUsbCardLive));
 
         // Start USB monitor
         template.usbScan1.start();
@@ -76,15 +68,42 @@ public class SysInfoDashboard extends JPanel {
         return new CardPanel(title, description);
     }
 
+    /** Replaces the usbCard with a fresh CardPanel to force redraw */
+    public void refreshUsbCard(String text) {
+        SwingUtilities.invokeLater(() -> {
+            JPanel parent = (JPanel) usbCard.getParent();
+            int index = -1;
+            for (int i = 0; i < parent.getComponentCount(); i++) {
+                if (parent.getComponent(i) == usbCard) {
+                    index = i;
+                    break;
+                }
+            }
+            if (index >= 0) {
+                parent.remove(usbCard);
+                usbCard = new CardPanel("USB", text);
+                usbCard.setPreferredSize(new Dimension(800, 200));
+                parent.add(usbCard, index);
+                parent.revalidate();
+                parent.repaint();
+            }
+        });
+    }
+
+    /** Helper: show a test text for a delay, then revert to live */
+    private void refreshUsbCardTest(String text, int delayMs) {
+        refreshUsbCard(text);
+        new Thread(() -> {
+            try {
+                Thread.sleep(delayMs);
+            } catch (InterruptedException ignored) {
+            }
+            SwingUtilities.invokeLater(template::updateUsbCardLive);
+        }).start();
+    }
+
     /** Static helper to update a dashboard's usbCard safely */
     public static void updateUsbCard(SysInfoDashboard dashboard, String text) {
-        Runnable r = () -> {
-            dashboard.usbCard.updateCard(text);
-        };
-        if (SwingUtilities.isEventDispatchThread()) {
-            r.run();
-        } else {
-            SwingUtilities.invokeLater(r);
-        }
+        dashboard.refreshUsbCard(text);
     }
 }
