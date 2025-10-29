@@ -106,6 +106,31 @@ public class template {
 
     }
 
+    public static String showUsbInfoJNI() {
+        usbInfo usb = new usbInfo();
+        usb.read();
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format("%-8s %-8s %-8s  %-8s  %-30s %-30s%n",
+                "Bus", "Device", "Vendor", "Product", "Vendor Name", "Device Name"));
+        sb.append(String.format("%-8s %-8s %-8s  %-8s  %-30s %-30s%n",
+                "---", "------", "------", "-------", "-----------", "-----------"));
+
+        for (int bus = 1; bus <= usb.busCount(); bus++) {
+            for (int dev = 1; dev <= usb.deviceCount(bus); dev++) {
+                int vendorId = usb.vendorID(bus, dev);
+                int productId = usb.productID(bus, dev);
+                // you can optionally look up vendor/device names using Dictionary
+                String vendorName = Dictionary.getUSBVendorName(vendorId);
+                String deviceName = Dictionary.getUSBDeviceName(vendorId, productId);
+                sb.append(String.format("%-8d %-8d 0x%04X  0x%04X  %-30s %-30s%n",
+                        bus, dev, vendorId, productId, vendorName, deviceName));
+            }
+        }
+
+        return sb.toString();
+    }
+
     // Helper methods to return formatted strings for cards
     public static String getCPUInfo() {
         if (computer.cpu == null)

@@ -48,9 +48,8 @@ public class SysInfoDashboard extends JPanel {
         bottomRow.add(usbCard);
 
         template.usbScan1.setListener((newList, added, removed) -> {
-            // only call your GUI update if there’s any change
             if (!added.isEmpty() || !removed.isEmpty()) {
-                SwingUtilities.invokeLater(() -> usbCard.updateCard(template.getUSBInfo()));
+                SwingUtilities.invokeLater(() -> usbCard.updateCard(template.showUsbInfoJNI()));
             }
         });
 
