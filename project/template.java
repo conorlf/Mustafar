@@ -6,6 +6,9 @@
 
 import systeminfo.*;
 import java.util.List;
+
+import javax.swing.SwingUtilities;
+
 import java.util.ArrayList;
 
 public class template {
@@ -48,6 +51,41 @@ public class template {
             }
         }
         computer.cpu = myCpu;
+    }
+
+    public static void autoRefreshUsbPanel(CardPanel panel, int intervalMs) {
+        Thread t = new Thread(() -> {
+            while (true) {
+                try {
+                    // 1. Refresh the USB device list
+                    refreshUsbInfo();
+
+                    // 2. Build the string from usbDevices
+                    StringBuilder sb = new StringBuilder();
+                    sb.append(String.format("%-8s %-8s %-8s  %-8s  %-30s %-30s%n",
+                            "Bus", "Device", "Vendor", "Product", "Vendor Name", "Device Name"));
+                    sb.append(String.format("%-8s %-8s %-8s  %-8s  %-30s %-30s%n",
+                            "---", "------", "------", "-------", "-----------", "-----------"));
+
+                    for (UsbDevice device : usbDevices) {
+                        sb.append(String.format("%-8d %-8d 0x%04X  0x%04X  %-30s %-30s%n",
+                                device.bus, device.device, device.vendorID, device.productID,
+                                device.vendorName, device.deviceName));
+                    }
+
+                    // 3. Update the CardPanel safely on the EDT
+                    SwingUtilities.invokeLater(() -> panel.updateCard(sb.toString()));
+
+                    // 4. Sleep for the interval
+                    Thread.sleep(intervalMs);
+                } catch (InterruptedException ex) {
+                    break; // stop the thread if interrupted
+                }
+            }
+        });
+
+        t.setDaemon(true); // allows JVM to exit even if thread is running
+        t.start();
     }
 
     public static void loadPciInfo() {
@@ -261,6 +299,8 @@ public class template {
 
         SysInfoDashboard dashboard = new SysInfoDashboard();
         registerDashboard(dashboard);
-        updateUsbCardLive();
+        // updateUsbCardLive();
+        CardPanel usbPanel = new CardPanel("USB Devices", "Loading...");
+        autoRefreshUsbPanel(usbPanel, 5000); // refresh every 5 seconds
     }
 }
