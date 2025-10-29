@@ -38,10 +38,10 @@ public class SysInfoDashboard extends JPanel {
         topRow.add(memCard);
         topRow.add(diskCard);
 
-        // Bottom row: 2 cards (wider - each 300px)
+        // Bottom row: 2 cards (wider)
         JPanel bottomRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 20));
         JPanel pciCard = createCard("PCI", template.getPCIInfo());
-        usbCard = createCard("USB", "NO DATA");
+        usbCard = createCard("USB", template.showUsbInfoJNI()); // show current USB devices immediately
         pciCard.setPreferredSize(new Dimension(800, 200));
         usbCard.setPreferredSize(new Dimension(800, 200));
         bottomRow.add(pciCard);
@@ -52,27 +52,26 @@ public class SysInfoDashboard extends JPanel {
 
         mainPanel.add(cardPanel, BorderLayout.CENTER);
 
-        // --- TEST UPDATE FLOW ---
-        // 1. Pause 2 seconds (freezes GUI)
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException ex) {
-            ex.printStackTrace();
-        }
+        usbCard.updateCard("Hello World"); // initial test text
 
-        // 2. Show test update
-        usbCard.updateCard("USB UPDATED - test refresh");
-        System.out.println("[USB Test] usbCard shows UPDATED for testing.");
+        new Thread(() -> {
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException ignored) {
+            }
+            SwingUtilities.invokeLater(() -> usbCard.updateCard(template.showUsbInfoJNI()));
+        }).start();
+        // Schedule it to update again after 2 seconds
 
-        // 3. Set listener for live USB changes
+        // Set listener for real USB changes
         template.usbScan1.setListener((newList, added, removed) -> {
             SwingUtilities.invokeLater(() -> {
-                usbCard.updateCard(template.showUsbInfoJNI()); // live JNI scan
+                usbCard.updateCard(template.showUsbInfoJNI()); // update card with live JNI data
                 System.out.println("[USB] Card updated with live JNI data.");
             });
         });
 
-        // 4. Start USB scanning
+        // Start USB scanning
         template.usbScan1.start();
     }
 
