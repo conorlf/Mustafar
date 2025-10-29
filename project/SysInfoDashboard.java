@@ -4,10 +4,9 @@ import java.awt.*;
 
 public class SysInfoDashboard extends JPanel {
 
-    private CardPanel usbCard;
+    CardPanel usbCard;
 
     public SysInfoDashboard() {
-        // Use BorderLayout for main panel
         setLayout(new BorderLayout());
 
         JPanel mainPanel = new JPanel(new BorderLayout());
@@ -21,12 +20,12 @@ public class SysInfoDashboard extends JPanel {
         topBar.add(title, BorderLayout.WEST);
         mainPanel.add(topBar, BorderLayout.NORTH);
 
-        // Cards panel - nested layout for different row widths
+        // Cards panel
         JPanel cardPanel = new JPanel();
         cardPanel.setLayout(new BoxLayout(cardPanel, BoxLayout.Y_AXIS));
         cardPanel.setBorder(new EmptyBorder(0, 20, 0, 20));
 
-        // Top row: 3 cards
+        // Top row: CPU, Memory, Disk
         JPanel topRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 20));
         JPanel cpuCard = createCard("CPU", template.getCPUInfo());
         JPanel memCard = createCard("Memory", template.getMemoryInfo());
@@ -38,10 +37,10 @@ public class SysInfoDashboard extends JPanel {
         topRow.add(memCard);
         topRow.add(diskCard);
 
-        // Bottom row: 2 cards (wider)
+        // Bottom row: PCI, USB
         JPanel bottomRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 20));
         JPanel pciCard = createCard("PCI", template.getPCIInfo());
-        usbCard = createCard("USB", template.showUsbInfoJNI()); // show current USB devices immediately
+        usbCard = createCard("USB", "NO DATA");
         pciCard.setPreferredSize(new Dimension(800, 200));
         usbCard.setPreferredSize(new Dimension(800, 200));
         bottomRow.add(pciCard);
@@ -49,23 +48,27 @@ public class SysInfoDashboard extends JPanel {
 
         cardPanel.add(topRow);
         cardPanel.add(bottomRow);
-
         mainPanel.add(cardPanel, BorderLayout.CENTER);
 
-        // initial test text
+        // --- Register this dashboard in template ---
+        template.registerDashboard(this);
 
-        // Schedule it to update again after 2 seconds
+        // --- Test update: show "Hello World" for 2 seconds ---
+        usbCard.updateCard("Hello World");
+        new Thread(() -> {
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException ignored) {
+            }
+            SwingUtilities.invokeLater(template::updateUsbCardLive);
+        }).start();
 
-        // Set listener for real USB changes
-        // template.usbScan1.setListener((newList, added, removed) -> {
-        // SwingUtilities.invokeLater(() -> {
-        // usbCard.updateCard(template.showUsbInfoJNI()); // update card with live JNI
-        // data
-        // System.out.println("[USB] Card updated with live JNI data.");
-        // });
-        // });
+        // --- Live USB updates ---
+        template.usbScan1.setListener((newList, added, removed) -> {
+            SwingUtilities.invokeLater(template::updateUsbCardLive);
+        });
 
-        // Start USB scanning
+        // Start USB monitor
         template.usbScan1.start();
     }
 
@@ -73,10 +76,15 @@ public class SysInfoDashboard extends JPanel {
         return new CardPanel(title, description);
     }
 
-    public static void updateUsbCard(SysInfoDashboard dashboard) {
-        SwingUtilities.invokeLater(() -> {
-            dashboard.usbCard.updateCard("Hello from static method!");
-            System.out.println("[USB] Card updated with live JNI data.");
-        });
+    /** Static helper to update a dashboard's usbCard safely */
+    public static void updateUsbCard(SysInfoDashboard dashboard, String text) {
+        Runnable r = () -> {
+            dashboard.usbCard.updateCard(text);
+        };
+        if (SwingUtilities.isEventDispatchThread()) {
+            r.run();
+        } else {
+            SwingUtilities.invokeLater(r);
+        }
     }
 }

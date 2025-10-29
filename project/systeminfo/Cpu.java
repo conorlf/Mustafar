@@ -25,6 +25,6 @@ public class Cpu {
         this.l1iCacheSize = l1iCacheSize;
         this.l2CacheSize = l2CacheSize;
         this.l3CacheSize = l3CacheSize;
-        this.cores = cores;
+        this.cores = new ArrayList<>();
     }
 }
