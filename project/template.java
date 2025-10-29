@@ -286,6 +286,8 @@ public class template {
         worker.start();
 
         Gui.showChart(computer, worker);
+        SysInfoDashboard dashboard = new SysInfoDashboard();
+        SysInfoDashboard.updateUsbCard(dashboard);
 
     }
 }

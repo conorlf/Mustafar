@@ -52,24 +52,18 @@ public class SysInfoDashboard extends JPanel {
 
         mainPanel.add(cardPanel, BorderLayout.CENTER);
 
-        usbCard.updateCard("Hello World"); // initial test text
+        // initial test text
 
-        new Thread(() -> {
-            try {
-                Thread.sleep(2000);
-            } catch (InterruptedException ignored) {
-            }
-            SwingUtilities.invokeLater(() -> usbCard.updateCard(template.showUsbInfoJNI()));
-        }).start();
         // Schedule it to update again after 2 seconds
 
         // Set listener for real USB changes
-        template.usbScan1.setListener((newList, added, removed) -> {
-            SwingUtilities.invokeLater(() -> {
-                usbCard.updateCard(template.showUsbInfoJNI()); // update card with live JNI data
-                System.out.println("[USB] Card updated with live JNI data.");
-            });
-        });
+        // template.usbScan1.setListener((newList, added, removed) -> {
+        // SwingUtilities.invokeLater(() -> {
+        // usbCard.updateCard(template.showUsbInfoJNI()); // update card with live JNI
+        // data
+        // System.out.println("[USB] Card updated with live JNI data.");
+        // });
+        // });
 
         // Start USB scanning
         template.usbScan1.start();
@@ -77,5 +71,12 @@ public class SysInfoDashboard extends JPanel {
 
     private CardPanel createCard(String title, String description) {
         return new CardPanel(title, description);
+    }
+
+    public static void updateUsbCard(SysInfoDashboard dashboard) {
+        SwingUtilities.invokeLater(() -> {
+            dashboard.usbCard.updateCard("Hello from static method!");
+            System.out.println("[USB] Card updated with live JNI data.");
+        });
     }
 }
