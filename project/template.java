@@ -6,9 +6,6 @@
 
 import systeminfo.*;
 import java.util.List;
-
-import javax.swing.SwingUtilities;
-
 import java.util.ArrayList;
 
 public class template {
@@ -17,7 +14,8 @@ public class template {
     public static memInfo mem = new memInfo();
     public static diskInfo disk = new diskInfo();
     public static pciInfo pci = new pciInfo();
-    public static UsbMonitor usbScan1 = new UsbMonitor();
+    public static usbInfo usb = new usbInfo();
+
     public static List<UsbDevice> usbDevices = new ArrayList<>();
     public static List<PciDevice> pciDevices = new ArrayList<>();
 
@@ -26,18 +24,6 @@ public class template {
 
     public static void registerDashboard(SysInfoDashboard dash) {
         sysDash = dash;
-    }
-
-    public static void updateUsbCardTest(String text) {
-        if (sysDash != null) {
-            SysInfoDashboard.updateUsbCard(sysDash, text);
-        }
-    }
-
-    public static void updateUsbCardLive() {
-        if (sysDash != null) {
-            SysInfoDashboard.updateUsbCard(sysDash, showUsbInfoJNI());
-        }
     }
 
     public static void loadCpuInfo() {
@@ -51,41 +37,6 @@ public class template {
             }
         }
         computer.cpu = myCpu;
-    }
-
-    public static void autoRefreshUsbPanel(CardPanel panel, int intervalMs) {
-        Thread t = new Thread(() -> {
-            while (true) {
-                try {
-                    // 1. Refresh the USB device list
-                    refreshUsbInfo();
-
-                    // 2. Build the string from usbDevices
-                    StringBuilder sb = new StringBuilder();
-                    sb.append(String.format("%-8s %-8s %-8s  %-8s  %-30s %-30s%n",
-                            "Bus", "Device", "Vendor", "Product", "Vendor Name", "Device Name"));
-                    sb.append(String.format("%-8s %-8s %-8s  %-8s  %-30s %-30s%n",
-                            "---", "------", "------", "-------", "-----------", "-----------"));
-
-                    for (UsbDevice device : usbDevices) {
-                        sb.append(String.format("%-8d %-8d 0x%04X  0x%04X  %-30s %-30s%n",
-                                device.bus, device.device, device.vendorID, device.productID,
-                                device.vendorName, device.deviceName));
-                    }
-
-                    // 3. Update the CardPanel safely on the EDT
-                    SwingUtilities.invokeLater(() -> panel.updateCard(sb.toString()));
-
-                    // 4. Sleep for the interval
-                    Thread.sleep(intervalMs);
-                } catch (InterruptedException ex) {
-                    break; // stop the thread if interrupted
-                }
-            }
-        });
-
-        t.setDaemon(true); // allows JVM to exit even if thread is running
-        t.start();
     }
 
     public static void loadPciInfo() {
@@ -120,25 +71,8 @@ public class template {
         }
     }
 
-    public static boolean refreshUsbInfo() {
-        List<UsbDevice> result = usbScan1.scanOnce();
-        if (result != null) {
-            usbDevices.clear();
-            usbDevices.addAll(result);
-            return true;
-        }
-        return false;
-    }
-
-    public static void showUsbInfo() {
-        System.out.println("showUsbInfo(): Found " + usbDevices.size() + " devices.");
-        for (UsbDevice device : usbDevices) {
-            device.displayUsbInfo();
-        }
-    }
-
-    public static String showUsbInfoJNI() {
-        usbInfo usb = new usbInfo();
+    // SIMPLIFIED: Just read USB info directly
+    public static String getUSBInfo() {
         usb.read();
         StringBuilder sb = new StringBuilder();
         sb.append(String.format("%-8s %-8s %-8s  %-8s  %-30s %-30s%n",
@@ -146,6 +80,7 @@ public class template {
         sb.append(String.format("%-8s %-8s %-8s  %-8s  %-30s %-30s%n",
                 "---", "------", "------", "-------", "-----------", "-----------"));
 
+        int deviceCount = 0;
         for (int bus = 1; bus <= usb.busCount(); bus++) {
             for (int dev = 1; dev <= usb.deviceCount(bus); dev++) {
                 int vendorId = usb.vendorID(bus, dev);
@@ -154,8 +89,14 @@ public class template {
                 String deviceName = Dictionary.getUSBDeviceName(vendorId, productId);
                 sb.append(String.format("%-8d %-8d 0x%04X  0x%04X  %-30s %-30s%n",
                         bus, dev, vendorId, productId, vendorName, deviceName));
+                deviceCount++;
             }
         }
+
+        if (deviceCount == 0) {
+            sb.append("No USB devices detected");
+        }
+
         return sb.toString();
     }
 
@@ -200,22 +141,6 @@ public class template {
         for (PciDevice device : pciDevices) {
             sb.append(String.format("%-8d %-8d %-8d 0x%04X  0x%04X  %-30s %-30s%n",
                     device.bus, device.device, device.function, device.vendorID, device.productID,
-                    device.vendorName, device.deviceName));
-        }
-        return sb.toString();
-    }
-
-    public static String getUSBInfo() {
-        if (usbDevices.isEmpty())
-            return "No USB devices";
-        StringBuilder sb = new StringBuilder();
-        sb.append(String.format("%-8s %-8s %-8s  %-8s  %-30s %-30s%n",
-                "Bus", "Device", "Vendor", "Product", "Vendor Name", "Device Name"));
-        sb.append(String.format("%-8s %-8s %-8s  %-8s  %-30s %-30s%n",
-                "---", "------", "------", "-------", "-----------", "-----------"));
-        for (UsbDevice device : usbDevices) {
-            sb.append(String.format("%-8d %-8d 0x%04X  0x%04X  %-30s %-30s%n",
-                    device.bus, device.device, device.vendorID, device.productID,
                     device.vendorName, device.deviceName));
         }
         return sb.toString();
@@ -287,20 +212,12 @@ public class template {
         cpu.read(0);
         loadPciInfo();
         showPCI();
-        if (refreshUsbInfo()) {
-            showUsbInfo();
-        }
-        usbScan1.start();
 
         SystemInfoWorker worker = new SystemInfoWorker();
         worker.start();
 
         Gui.showChart(computer, worker);
 
-        SysInfoDashboard dashboard = new SysInfoDashboard();
-        registerDashboard(dashboard);
-        // updateUsbCardLive();
-        CardPanel usbPanel = new CardPanel("USB Devices", "Loading...");
-        autoRefreshUsbPanel(usbPanel, 5000); // refresh every 5 seconds
+        // The dashboard will handle its own button-based refresh
     }
 }

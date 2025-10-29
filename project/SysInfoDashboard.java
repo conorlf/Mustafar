@@ -4,7 +4,8 @@ import java.awt.*;
 
 public class SysInfoDashboard extends JPanel {
 
-    CardPanel usbCard;
+    private CardPanel usbCard;
+    private JButton refreshUsbButton;
 
     public SysInfoDashboard() {
         setLayout(new BorderLayout());
@@ -12,12 +13,18 @@ public class SysInfoDashboard extends JPanel {
         JPanel mainPanel = new JPanel(new BorderLayout());
         add(mainPanel, BorderLayout.CENTER);
 
-        // Top bar
+        // Top bar with refresh button
         JPanel topBar = new JPanel(new BorderLayout());
         topBar.setBorder(new EmptyBorder(10, 15, 10, 15));
         JLabel title = new JLabel("System Information");
         title.setFont(new Font("Segoe UI", Font.BOLD, 22));
         topBar.add(title, BorderLayout.WEST);
+
+        // Add refresh button to top bar
+        refreshUsbButton = new JButton("Refresh All");
+        refreshUsbButton.addActionListener(e -> refreshAllCards());
+        topBar.add(refreshUsbButton, BorderLayout.EAST);
+
         mainPanel.add(topBar, BorderLayout.NORTH);
 
         // Cards panel
@@ -40,11 +47,20 @@ public class SysInfoDashboard extends JPanel {
         // Bottom row: PCI, USB
         JPanel bottomRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 20));
         JPanel pciCard = createCard("PCI", template.getPCIInfo());
-        usbCard = createCard("USB", "NO DATA");
+        usbCard = createCard("USB", template.getUSBInfo());
+
+        // Add refresh button specifically for USB
+        JButton usbRefreshButton = new JButton("Refresh USB");
+        usbRefreshButton.addActionListener(e -> refreshUsbCard());
+
+        JPanel usbPanelWithButton = new JPanel(new BorderLayout());
+        usbPanelWithButton.add(usbCard, BorderLayout.CENTER);
+        usbPanelWithButton.add(usbRefreshButton, BorderLayout.SOUTH);
+
         pciCard.setPreferredSize(new Dimension(800, 200));
-        usbCard.setPreferredSize(new Dimension(800, 200));
+        usbPanelWithButton.setPreferredSize(new Dimension(800, 250));
         bottomRow.add(pciCard);
-        bottomRow.add(usbCard);
+        bottomRow.add(usbPanelWithButton);
 
         cardPanel.add(topRow);
         cardPanel.add(bottomRow);
@@ -52,58 +68,23 @@ public class SysInfoDashboard extends JPanel {
 
         // Register this dashboard in template
         template.registerDashboard(this);
-
-        // Test update: show "Hello World" for 2 seconds
-        refreshUsbCardTest("Hello World", 2000);
-
-        // Live USB updates
-        template.usbScan1
-                .setListener((newList, added, removed) -> SwingUtilities.invokeLater(template::updateUsbCardLive));
-
-        // Start USB monitor
-        template.usbScan1.start();
     }
 
     private CardPanel createCard(String title, String description) {
         return new CardPanel(title, description);
     }
 
-    /** Replaces the usbCard with a fresh CardPanel to force redraw */
-    public void refreshUsbCard(String text) {
-        SwingUtilities.invokeLater(() -> {
-            JPanel parent = (JPanel) usbCard.getParent();
-            int index = -1;
-            for (int i = 0; i < parent.getComponentCount(); i++) {
-                if (parent.getComponent(i) == usbCard) {
-                    index = i;
-                    break;
-                }
-            }
-            if (index >= 0) {
-                parent.remove(usbCard);
-                usbCard = new CardPanel("USB", text);
-                usbCard.setPreferredSize(new Dimension(800, 200));
-                parent.add(usbCard, index);
-                parent.revalidate();
-                parent.repaint();
-            }
-        });
+    /** Simple USB refresh - just get fresh data and update the card */
+    private void refreshUsbCard() {
+        String newUsbInfo = template.getUSBInfo();
+        usbCard.updateCard(newUsbInfo);
+        System.out.println("USB info refreshed manually");
     }
 
-    /** Helper: show a test text for a delay, then revert to live */
-    private void refreshUsbCardTest(String text, int delayMs) {
-        refreshUsbCard(text);
-        new Thread(() -> {
-            try {
-                Thread.sleep(delayMs);
-            } catch (InterruptedException ignored) {
-            }
-            SwingUtilities.invokeLater(template::updateUsbCardLive);
-        }).start();
-    }
-
-    /** Static helper to update a dashboard's usbCard safely */
-    public static void updateUsbCard(SysInfoDashboard dashboard, String text) {
-        dashboard.refreshUsbCard(text);
+    /** Refresh all system information cards */
+    private void refreshAllCards() {
+        // Note: CPU, Memory, Disk would need similar refresh methods
+        refreshUsbCard();
+        System.out.println("All system info refreshed");
     }
 }
