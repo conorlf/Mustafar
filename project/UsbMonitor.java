@@ -54,7 +54,7 @@ public List<UsbDevice> scanOnce() {
     List<String> added = new ArrayList<>();
     List<String> removed = new ArrayList<>();
 
-    // Compute deltas; on first run oldIds is empty, so all are treated as added
+    // Compute changes on first run oldIds is empty, so all are treated as added
     added.addAll(newIds);
     added.removeAll(new HashSet<>(oldIds));
 
@@ -82,10 +82,7 @@ public List<UsbDevice> scanOnce() {
     oldList.addAll(newList);
 
     if (!added.isEmpty() || !removed.isEmpty()) {
-    for (String id : added)
-        System.out.println("[USB] Added: " + id);
-    for (String id : removed)
-        System.out.println("[USB] Removed: " + id);
+        template.getUsbNotification(lastAdded, lastRemoved);
 
     return newList; 
 }

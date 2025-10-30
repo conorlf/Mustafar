@@ -17,6 +17,7 @@ public class SystemInfoWorker extends Thread {
     }
 
 
+
     public void run() {
         while (running) {   
             // takes around 1 second and collects usage data for that one second
@@ -37,25 +38,13 @@ public class SystemInfoWorker extends Thread {
             if (template.refreshUsbInfo()) {
                 if (dashboard != null) {
                     SwingUtilities.invokeLater(() -> dashboard.refreshUsb());
+                    final String msg = template.notificationString;
+                    SwingUtilities.invokeLater(() -> usbNotifier.notify(msg));
                 } else {
                     template.showUsbInfo();
                 }
-                if (usbNotifier != null) {
-                    // Build a message listing all additions/removals
-                    StringBuilder msg = new StringBuilder();
-                    for (UsbDevice d : template.usbScan1.lastAdded) {
-                        msg.append("USB Added:\n").append(d.vendorName).append("\t").append(d.deviceName).append("\n");
-                    }
-                    for (UsbDevice d : template.usbScan1.lastRemoved) {
-                        msg.append("USB Removed:\n").append(d.vendorName).append("\t").append(d.deviceName).append("\n");
-                    }
-                    String finalMsg = msg.length() == 0 ? "USB devices changed" : msg.toString().trim();
-                    SwingUtilities.invokeLater(() -> usbNotifier.notify(finalMsg));
-                }
+                
             }
-            
-            
-
 
         }
     }

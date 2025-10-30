@@ -123,11 +123,12 @@ public class Gui {
             notificationLabel.setText(message);
             notificationGlass.setVisible(true);
             // hide after 2 seconds
-            new javax.swing.Timer(2000, evt -> {
+            new javax.swing.Timer(3000, evt -> {
                 notificationGlass.setVisible(false);
                 ((javax.swing.Timer) evt.getSource()).stop();
             }).start();
         });
+
 
         int[] lastPlotted = new int[computer.cpu.cores.size()];
         int[] lastPlottedDisk = new int[computer.disks.size()];

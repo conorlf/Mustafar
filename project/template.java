@@ -20,6 +20,7 @@ public class template
     public static UsbMonitor usbScan1 = new UsbMonitor();
     public static List<UsbDevice> usbDevices = new ArrayList<>();
     public static List<PciDevice> pciDevices = new ArrayList<>();
+    static String notificationString;
     //public static int pciBusCount, pciDeviceCount,pciFunctionCount;
     public static void loadCpuInfo() {
         cpu.read(0);
@@ -177,6 +178,14 @@ public class template
         }
         return sb.toString();
     }
+    public static void getUsbNotification(List<UsbDevice> added, List<UsbDevice> removed) {
+        StringBuilder sb = new StringBuilder();
+        for (UsbDevice d : added) sb.append("USB Added:\n").append(d.vendorName).append("\t").append(d.deviceName).append("\n");
+        for (UsbDevice d : removed) sb.append("USB Removed:\n").append(d.vendorName).append("\t").append(d.deviceName).append("\n");
+        notificationString = sb.toString();
+       
+    }
+    
 
     // disks are one based
     public static void loadDiskInfo() {
