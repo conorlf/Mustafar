@@ -136,8 +136,8 @@ public class template
         sb.append("Disks:\n");
         for (int i = 0; i < disk.diskCount(); i++) {
             sb.append(String.format("Disk %d: %s\n", i, disk.getName(i)));
-            sb.append(String.format("%d KB used / %d KB total (%.1f%%)\n",
-                    disk.getUsed(i), disk.getTotal(i),
+            sb.append(String.format("%.0f MB used / %.0f MB total (%.1f%%)\n",
+                    ((float)disk.getUsed(i)/1000),((float) disk.getTotal(i)/1000),
                     ((float) ((disk.getTotal(i) > 0) ? (disk.getUsed(i) * 100.0) / disk.getTotal(i) : 0.0))));
         }
         sb.append("Total disks \n");
