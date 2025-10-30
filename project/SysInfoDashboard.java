@@ -73,7 +73,7 @@ public class SysInfoDashboard extends JPanel {
     public void refreshUsbCard() {
         String newUsbInfo = template.getUSBInfo();
         usbCard.updateCard(newUsbInfo);
-        System.out.println("USB info refreshed manually");
+        System.out.println(template.getUSBInfo());
     }
 
     /** Refresh all system information cards */

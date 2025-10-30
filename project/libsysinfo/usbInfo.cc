@@ -66,34 +66,62 @@ int USBInfo::_xtoi (string& s, int idefault)
     return ival;
 }
 
-void USBInfo::_parseDevice (char buffer[])
-{
+void USBInfo::_parseDevice(char buffer[]) {
     string line = buffer;
-    int ival;
+    istringstream iss(line);
+    string tmp, busStr, deviceStr, vidPid;
 
-    string part = "0x"+line.substr(4,3);
-    int bus = _xtoi (part,0);
+    // Attempt to read the main tokens
+    if (!(iss >> tmp >> busStr >> tmp >> deviceStr >> tmp >> vidPid))
+        return; // malformed line, ignore
 
-    part = "0x"+line.substr(15,3);
-    int device = _xtoi (part,0);
+    // Remove trailing colon from device number
+    if (!deviceStr.empty() && deviceStr.back() == ':')
+        deviceStr.pop_back();
 
-    part = "0x"+line.substr(23,4);
-    _bus[bus].device[device].vendor = _xtoi (part,0);
+    // Safely parse bus and device numbers
+    int bus = 0, device = 0;
+    try {
+        bus = stoi(busStr);
+        device = stoi(deviceStr);
+    } catch (...) {
+        return; // ignore malformed numbers
+    }
 
-    part = "0x"+line.substr(28,4);
-    _bus[bus].device[device].product = _xtoi (part,0);
+    // Check that vidPid contains ':' before splitting
+    auto pos = vidPid.find(':');
+    if (pos == string::npos || pos + 1 >= vidPid.size())
+        return; // malformed ID, ignore
 
-    // cout<<"bus="<<bus<<", dev="<<device<<endl;
+    string vendorStr = vidPid.substr(0, pos);
+    string productStr = vidPid.substr(pos + 1);
+
+    // Assign vendor/product safely
+    _bus[bus].device[device].vendor = _xtoi(vendorStr, 0);
+    _bus[bus].device[device].product = _xtoi(productStr, 0);
+
+    // Update counts
     if (bus > _busCount)
         _busCount = bus;
-
     if (device > _bus[bus].deviceCount)
         _bus[bus].deviceCount = device;
-    // cout<<"busus="<<_busCount<<", devs="<<_bus[bus].deviceCount<<endl;
 }
+
 
 void USBInfo::read()
 {
+
+     // CLEAR OLD DATA FIRST
+    _busCount = 0;
+    for (int i = 0; i < maxBus; i++) {
+        _bus[i].deviceCount = 0;
+        // Optionally clear individual device data too
+        for (int j = 0; j < USBBus::maxDevice; j++) {
+            _bus[i].device[j].vendor = 0;
+            _bus[i].device[j].product = 0;
+        }
+    }
+
     std::array<char, 4096> buffer;
     std::unique_ptr<FILE, decltype(&pclose)> pipe(popen("lsusb", "r"), pclose);
 
