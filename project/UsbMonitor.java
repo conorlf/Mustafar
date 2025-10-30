@@ -46,8 +46,7 @@ public final class UsbMonitor implements AutoCloseable {
     private void scanOnceSafe() {
         try {
             List<UsbDevice> newList = scanOnce(); // returns newList (never null)
-            // if you want immediate handling here, we could call listener
-            // but scanOnce already computes added/removed and prints them.
+
         } catch (Throwable t) {
             System.out.println("[USB Monitor] Error: " + t);
             t.printStackTrace();
@@ -61,6 +60,18 @@ public final class UsbMonitor implements AutoCloseable {
     public List<UsbDevice> scanOnce() {
         usbInfo usb = new usbInfo();
         usb.read();
+
+        System.out.println("[RAW C++ DATA] Bus count: " + usb.busCount());
+        for (int bus = 1; bus <= usb.busCount(); bus++) {
+            int devCount = usb.deviceCount(bus);
+            System.out.println("[RAW C++ DATA] Bus " + bus + " devices: " + devCount);
+            for (int dev = 1; dev <= devCount; dev++) {
+                int vendor = usb.vendorID(bus, dev);
+                int product = usb.productID(bus, dev);
+                System.out.printf("[RAW C++ DATA] Bus %d Dev %d: %04X:%04X%n",
+                        bus, dev, vendor, product);
+            }
+        }
 
         List<String> newIds = new ArrayList<>();
         List<UsbDevice> newList = new ArrayList<>();
