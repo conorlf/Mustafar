@@ -116,8 +116,8 @@ public class template
         sb.append(String.format("Model: %s\n", computer.cpu.model));
         sb.append(String.format("Cores: %d\n", computer.cpu.cores.size()));
         for (CpuCore core : computer.cpu.cores) {
-            List<CpuTimings> history = core.cpuTimings;
-            double usage = history.isEmpty() ? 0.0 : history.get(history.size() - 1).usagePercent;
+            //List<CpuTimings> history = core.cpuTimings;
+            double usage = core.cpuTimings == null ? 0.0 : core.cpuTimings.usagePercent;
             sb.append(String.format("Core%d: %.2f%%\n", core.index, usage));
         }
         return sb.toString().trim();
@@ -192,7 +192,7 @@ public class template
         disk.read();
         for (int i = 0; i < disk.diskCount(); i++) {
             DiskBlocks db = new DiskBlocks(disk.getUsed(i), disk.getTotal(i), disk.getAvailable(i));
-            computer.disks.get(i).diskBlocks.add(db);
+            computer.disks.get(i).diskBlocks = db;
         }
     }
 
@@ -215,7 +215,7 @@ public class template
             double userPercent = ((double) userTime / totalTime) * 100;
 
             CpuTimings myCpuTimings = new CpuTimings(idlePercent, userPercent, systemPercent);
-            computer.cpu.cores.get(i).cpuTimings.add(myCpuTimings);
+            computer.cpu.cores.get(i).cpuTimings = myCpuTimings;
         }
     }
 

@@ -129,8 +129,6 @@ public class Gui {
             }).start();
         });
 
-        int[] lastPlotted = new int[computer.cpu.cores.size()];
-        int[] lastPlottedDisk = new int[computer.disks.size()];
         // updates cpu chart once per second on swing thread
         new javax.swing.Timer(1000, e -> {
             Second now = new Second(); 
@@ -138,11 +136,9 @@ public class Gui {
                 CpuCore core = computer.cpu.cores.get(i);
                 TimeSeries ts = coreSeries.get(i);
 
-                for (int j = lastPlotted[i]; j < core.cpuTimings.size(); j++) {
-                    CpuTimings t = core.cpuTimings.get(j);
-                    ts.addOrUpdate(now, t.usagePercent);
-                }
-                lastPlotted[i] = core.cpuTimings.size();
+                CpuTimings t = core.cpuTimings;
+                ts.addOrUpdate(now, t.usagePercent);
+                
 
                 // deletes points older than 60 seconds as it's not being displayed on graph
                 while (ts.getItemCount() > 0 && ts.getTimePeriod(0).getLastMillisecond() < now.getFirstMillisecond() - 60000) { 
@@ -161,11 +157,9 @@ public class Gui {
                 Disk disk = computer.disks.get(i);
                 TimeSeries ts = diskSeries.get(i);
 
-                for (int j = lastPlottedDisk[i]; j < disk.diskBlocks.size(); j++) {
-                    DiskBlocks t = disk.diskBlocks.get(j);
-                    ts.addOrUpdate(now, t.usagePercent);
-                }
-                lastPlottedDisk[i] = disk.diskBlocks.size();
+                DiskBlocks t = disk.diskBlocks;
+                ts.addOrUpdate(now, t.usagePercent);
+                
 
                 // deletes points older than 60 seconds as it's not being displayed on graph
                 while (ts.getItemCount() > 0 && ts.getTimePeriod(0).getLastMillisecond() < now.getFirstMillisecond() - 60000) { 
