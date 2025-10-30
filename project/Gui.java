@@ -1,4 +1,5 @@
 import javax.swing.*;
+import java.awt.*;
 import java.util.List;
 import java.util.ArrayList;
 import org.jfree.chart.ChartPanel;
@@ -99,11 +100,34 @@ public class Gui {
         XYLineAndShapeRenderer diskRenderer = (XYLineAndShapeRenderer) diskPlot.getRenderer();
         diskRenderer.setDefaultShapesVisible(false);
 
+        // Glass pane notification setup
+        JPanel notificationGlass = new JPanel(new GridBagLayout());
+        JLabel notificationLabel = new JLabel("", SwingConstants.CENTER);
+        notificationLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        notificationLabel.setForeground(Color.WHITE);
+        notificationLabel.setOpaque(true);
+        notificationLabel.setBackground(new Color(0, 122, 204, 220));
+        notificationLabel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        notificationGlass.add(notificationLabel, new GridBagConstraints());
+        notificationGlass.setVisible(false);
+        frame.setGlassPane(notificationGlass);
+
         frame.setSize(900, 600);
         frame.setVisible(true);
 
         // provide dashboard to worker so it can refresh cards
         worker.setDashboard(dashboard);
+
+        // notify on USB change: show glass-pane banner briefly
+        worker.setUsbChangeNotifier(message -> {
+            notificationLabel.setText(message);
+            notificationGlass.setVisible(true);
+            // hide after 2 seconds
+            new javax.swing.Timer(2000, evt -> {
+                notificationGlass.setVisible(false);
+                ((javax.swing.Timer) evt.getSource()).stop();
+            }).start();
+        });
 
         int[] lastPlotted = new int[computer.cpu.cores.size()];
         int[] lastPlottedDisk = new int[computer.disks.size()];

@@ -14,6 +14,8 @@ public final class UsbMonitor{
     */
     public volatile List<String> oldIds = new ArrayList<>();
     public List<UsbDevice> oldList = new ArrayList<>();
+    public List<UsbDevice> lastAdded = new ArrayList<>();
+    public List<UsbDevice> lastRemoved = new ArrayList<>();
 
     public UsbMonitor() {
         
@@ -58,6 +60,20 @@ public List<UsbDevice> scanOnce() {
 
     removed.addAll(oldIds);
     removed.removeAll(new HashSet<>(newIds));
+
+    // Derive concrete device objects for notifications
+    lastAdded.clear();
+    lastRemoved.clear();
+    if (!added.isEmpty()) {
+        for (UsbDevice d : newList) {
+            if (added.contains(d.getUniqueID())) lastAdded.add(d);
+        }
+    }
+    if (!removed.isEmpty()) {
+        for (UsbDevice d : oldList) {
+            if (removed.contains(d.getUniqueID())) lastRemoved.add(d);
+        }
+    }
 
     // Update state each tick
     oldIds.clear();
