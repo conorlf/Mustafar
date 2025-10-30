@@ -73,6 +73,7 @@ public class template {
 
     // SIMPLIFIED: Just read USB info directly
     public static String getUSBInfo() {
+        usbInfo usb = new usbInfo();
         usb.read();
         StringBuilder sb = new StringBuilder();
         sb.append(String.format("%-8s %-8s %-8s  %-8s  %-30s %-30s%n",
