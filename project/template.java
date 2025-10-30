@@ -130,10 +130,18 @@ public class template
     }
     
     public static String getDiskInfo() {
+        diskInfo disk = new diskInfo();
+        disk.read();
         StringBuilder sb = new StringBuilder();
-        for (var d : computer.disks) {
-            sb.append(d.name).append("\n");
+        sb.append("Disks:\n");
+        for (int i = 0; i < disk.diskCount(); i++) {
+            sb.append(String.format("Disk %d: %s\n", i, disk.getName(i)));
+            sb.append(String.format("%d KB used / %d KB total (%.1f%%)\n",
+                    disk.getUsed(i), disk.getTotal(i),
+                    ((float) ((disk.getTotal(i) > 0) ? (disk.getUsed(i) * 100.0) / disk.getTotal(i) : 0.0))));
         }
+        sb.append("Total disks \n");
+        sb.append(disk.diskCount());
         return sb.toString().trim();
     }
     
@@ -160,6 +168,9 @@ public class template
         sb.append(String.format("%-8s %-8s %-8s  %-8s  %-30s %-30s%n",
             "---", "------", "------", "-------", "-----------", "-----------"));
         for (UsbDevice device : usbDevices) {
+            if (device.vendorID == 0) {
+                continue;
+            }
             sb.append(String.format("%-8d %-8d 0x%04X  0x%04X  %-30s %-30s%n",
                 device.bus, device.device, device.vendorID, device.productID, 
                 device.vendorName, device.deviceName));
