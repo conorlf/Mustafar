@@ -112,7 +112,15 @@ public class template
     // Helper methods to return formatted strings for cards
     public static String getCPUInfo() {
         if (computer.cpu == null) return "CPU not loaded";
-        return String.format("Model: %s\nCores: %d", computer.cpu.model, computer.cpu.cores.size());
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format("Model: %s\n", computer.cpu.model));
+        sb.append(String.format("Cores: %d\n", computer.cpu.cores.size()));
+        for (CpuCore core : computer.cpu.cores) {
+            List<CpuTimings> history = core.cpuTimings;
+            double usage = history.isEmpty() ? 0.0 : history.get(history.size() - 1).usagePercent;
+            sb.append(String.format("Core%d: %.2f%%\n", core.index, usage));
+        }
+        return sb.toString().trim();
     }
     
     public static String getMemoryInfo() {

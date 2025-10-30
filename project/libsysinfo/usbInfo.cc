@@ -94,6 +94,19 @@ void USBInfo::_parseDevice (char buffer[])
 
 void USBInfo::read()
 {
+        //edit
+    // clearing old list from lsusb read
+    _busCount = 0;
+    for (int i = 0; i < maxBus; i++) {
+        _bus[i].deviceCount = 0;
+        // Optionally clear individual device data too
+        for (int j = 0; j < USBBus::maxDevice; j++) {
+            _bus[i].device[j].vendor = 0;
+            _bus[i].device[j].product = 0;
+        }
+    }
+
+    //end of edi
     std::array<char, 4096> buffer;
     std::unique_ptr<FILE, decltype(&pclose)> pipe(popen("lsusb", "r"), pclose);
 
