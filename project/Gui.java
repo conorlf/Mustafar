@@ -55,7 +55,8 @@ public class Gui {
 
 
         JTabbedPane tabs = new JTabbedPane();
-        tabs.addTab("System Information", createSystemInfoTab(computer));
+        SysInfoDashboard dashboard = new SysInfoDashboard();
+        tabs.addTab("System Information", dashboard);
         tabs.addTab("CPU Graph", new ChartPanel(cpuChart));
         tabs.addTab("Memory Graph", new ChartPanel(memChart));
         tabs.addTab("Disk Graph", new ChartPanel(diskChart));
@@ -100,6 +101,9 @@ public class Gui {
 
         frame.setSize(900, 600);
         frame.setVisible(true);
+
+        // provide dashboard to worker so it can refresh cards
+        worker.setDashboard(dashboard);
 
         int[] lastPlotted = new int[computer.cpu.cores.size()];
         int[] lastPlottedDisk = new int[computer.disks.size()];
