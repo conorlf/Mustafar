@@ -35,9 +35,9 @@ public class SysInfoDashboard extends JPanel {
         JPanel cpuCard = createCpuCard();
         JPanel memCard = createMemCard();
         JPanel diskCard = createDiskCard();
-        cpuCard.setPreferredSize(new Dimension(200, 200));
-        memCard.setPreferredSize(new Dimension(200, 200));
-        diskCard.setPreferredSize(new Dimension(200, 200));
+        cpuCard.setPreferredSize(new Dimension(400, 300));
+        memCard.setPreferredSize(new Dimension(400, 300));
+        diskCard.setPreferredSize(new Dimension(400, 300));
         topRow.add(cpuCard);
         topRow.add(memCard);
         topRow.add(diskCard);
@@ -46,8 +46,8 @@ public class SysInfoDashboard extends JPanel {
         JPanel bottomRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 20));
         JPanel pciCard = createCard("PCI", template.getPCIInfo());
         JPanel usbCard = createUsbCard();
-        pciCard.setPreferredSize(new Dimension(800, 200));
-        usbCard.setPreferredSize(new Dimension(800, 200));
+        pciCard.setPreferredSize(new Dimension(800, 400));
+        usbCard.setPreferredSize(new Dimension(800, 400));
         bottomRow.add(pciCard);
         bottomRow.add(usbCard);
         
